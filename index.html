@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#1565C0" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ประปาชุกหว้า" />
+  <link id="pwa-manifest" rel="manifest" />
   <title>ประปาหมู่บ้านชุกหว้า</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap');
@@ -487,7 +489,10 @@
       <button class="btn btn-primary" onclick="printReceipt()" style="flex:1">🖨️ พิมพ์</button>
       <button class="btn btn-success" onclick="saveToSheetAndDrive()" style="flex:1" id="btn-save">💾 บันทึก</button>
     </div>
-    <button class="btn btn-outline" onclick="closeModal('modal-receipt')">← กลับแก้ไข</button>
+    <div class="btn-row" style="margin-bottom:9px">
+      <button class="btn btn-outline" onclick="saveReceiptImage()" style="flex:1" id="btn-img">📸 บันทึกรูป Drive</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-receipt')" style="flex:1">← กลับ</button>
+    </div>
   </div>
 </div>
 
@@ -782,8 +787,9 @@ function renderAll() {
 async function apiGet(action, params={}) {
   const url = new URL(state.settings.scriptUrl);
   url.searchParams.set('action', action);
+  url.searchParams.set('_t', Date.now()); // cache-bust ทุกครั้ง
   for (const [k,v] of Object.entries(params)) url.searchParams.set(k,v);
-  return (await fetch(url.toString())).json();
+  return (await fetch(url.toString(), { cache:'no-store' })).json();
 }
 async function apiPost(data) {
   return (await fetch(state.settings.scriptUrl, { method:'POST', body:JSON.stringify(data) })).json();
@@ -1197,18 +1203,28 @@ function onReadingChange() {
     return;
   }
   const units = cur - prev;
-  const waterCost = units > s.minUnits ? (units - s.minUnits) * s.unitPrice : 0;
-  const serviceFee = s.minCharge;
-  const total = serviceFee + waterCost;
+  const rawCost   = units * s.unitPrice;
+  const total     = Math.max(s.minCharge, rawCost);
+  const waterCost = rawCost;
+  // serviceFee ใช้แสดงเฉพาะตอนใช้น้ำน้อยกว่าขั้นต่ำ
+  const isMin     = rawCost < s.minCharge;
 
   document.getElementById('calc-units').textContent = units.toLocaleString() + ' หน่วย';
   document.getElementById('calc-rate-label').textContent = `ค่าน้ำ (หน่วยละ ${s.unitPrice} บ.)`;
-  document.getElementById('calc-water').textContent = waterCost > 0 ? waterCost.toLocaleString() + ' บาท' : '-';
-  document.getElementById('calc-service').textContent = serviceFee.toLocaleString() + ' บาท';
+  document.getElementById('calc-water').textContent = rawCost.toLocaleString() + ' บาท';
+  const svcEl = document.getElementById('calc-service');
+  const svcRow = svcEl.closest('.calc-row');
+  if (isMin) {
+    svcEl.closest('.calc-row').querySelector('span:first-child').textContent = 'ค่าขั้นต่ำ';
+    svcEl.textContent = s.minCharge.toLocaleString() + ' บาท';
+    if (svcRow) svcRow.style.display = '';
+  } else {
+    if (svcRow) svcRow.style.display = 'none';
+  }
   document.getElementById('calc-total').textContent = total.toLocaleString() + ' บาท';
   document.getElementById('calc-box').classList.add('visible');
   document.getElementById('btn-view-receipt').disabled = false;
-  state.readingData = { units, waterCost, serviceFee, total, currentReading:cur };
+  state.readingData = { units, waterCost, serviceFee: isMin ? s.minCharge : 0, total, currentReading:cur };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1325,6 +1341,62 @@ function printReceipt() {
     } catch(e) { console.warn('QR print:', e); }
   }
   window.print();
+}
+
+async function saveReceiptImage() {
+  const btn = document.getElementById('btn-img');
+  const el  = document.getElementById('receipt-display');
+  if (!el || !window.html2canvas) { showToast('⏳ กรุณารอสักครู่แล้วลองใหม่'); return; }
+  btn.disabled = true; btn.textContent = '⏳ กำลังสร้างรูป...';
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2.5, useCORS: true, backgroundColor: '#ffffff',
+      logging: false, allowTaint: true
+    });
+    const r = state.currentReceipt;
+    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`
+                    .replace(/\s/g,'_').replace(/\//g,'-');
+
+    if (!state.demoMode && state.settings.scriptUrl) {
+      // ─── บันทึกลง Google Drive ───
+      btn.textContent = '☁️ กำลังอัปโหลด Drive...';
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      try {
+        const res = await apiPost({
+          action: 'uploadReceipt',
+          image: base64,
+          fileName: fname
+        });
+        if (res.fileUrl) {
+          showToast('✅ บันทึกลง Google Drive แล้ว');
+          if (confirm('✅ บันทึกรูปลง Google Drive แล้ว!\nต้องการเปิดดูใน Drive ไหมครับ?')) {
+            window.open(res.fileUrl, '_blank');
+          }
+        } else {
+          showToast('⚠️ Drive ตอบกลับผิดพลาด — ดาวน์โหลดแทน');
+          canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
+        }
+      } catch(e) {
+        showToast('⚠️ อัปโหลดไม่สำเร็จ — ดาวน์โหลดแทน');
+        canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
+      }
+    } else {
+      // ─── Demo / ยังไม่ตั้งค่า → ดาวน์โหลด ───
+      canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
+    }
+  } catch(e) {
+    showToast('⚠️ ไม่สามารถสร้างรูปได้');
+  } finally {
+    btn.disabled = false; btn.textContent = '📸 บันทึกรูป Drive';
+  }
+}
+function fallbackDownload(blob, fname) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ ดาวน์โหลดรูปแล้ว');
 }
 
 async function saveToSheetAndDrive() {
@@ -1615,38 +1687,85 @@ function switchHistoryTab(tab) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  NAV
+//  PWA ICON (water drop canvas)
 // ════════════════════════════════════════════════════════════
-function switchView(view) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('view-'+view).classList.add('active');
-  document.getElementById('nav-'+view).classList.add('active');
-  document.getElementById('fab-add').style.display = view==='home' ? 'flex' : 'none';
-  if (view==='dashboard') renderDashboard();
+function makePwaIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,size);
+  grad.addColorStop(0,'#1E88E5'); grad.addColorStop(1,'#0D47A1');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(0,0,size,size,size*0.22);
+  else { ctx.rect(0,0,size,size); }
+  ctx.fill();
+  const cx=size/2, top=size*0.13, bot=size*0.84, r=size*0.28;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.beginPath();
+  ctx.moveTo(cx, top);
+  ctx.bezierCurveTo(cx+size*0.32, size*0.38, cx+r, bot-r, cx, bot);
+  ctx.bezierCurveTo(cx-r, bot-r, cx-size*0.32, size*0.38, cx, top);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(cx-size*0.09, size*0.47, size*0.07, size*0.12, -0.4, 0, Math.PI*2);
+  ctx.fill();
+  return c.toDataURL('image/png');
 }
 
 // ════════════════════════════════════════════════════════════
-//  MODAL / LOADING / TOAST
+//  PWA MANIFEST
 // ════════════════════════════════════════════════════════════
-function openModal(id)  { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function showLoading(t) { document.getElementById('loading-text').textContent=t||'กำลังโหลด...'; document.getElementById('loading').classList.add('active'); }
-function hideLoading()  { document.getElementById('loading').classList.remove('active'); }
-let _toast;
-function showToast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(_toast); _toast=setTimeout(()=>t.classList.remove('show'),2800);
-}
+(function registerManifest() {
+  const icon192 = makePwaIcon(192);
+  const icon512 = makePwaIcon(512);
+  const manifest = {
+    name: 'ประปาหมู่บ้านชุกหว้า',
+    short_name: 'ประปาชุกหว้า',
+    description: 'ระบบจัดการประปาหมู่บ้านชุกหว้า',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#F0F4FF',
+    theme_color: '#1565C0',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const mblob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const murl  = URL.createObjectURL(mblob);
+  const ml = document.getElementById('pwa-manifest');
+  if (ml) ml.setAttribute('href', murl);
+  const al = document.createElement('link');
+  al.rel = 'apple-touch-icon'; al.href = icon192;
+  document.head.appendChild(al);
+})();
 
 // ════════════════════════════════════════════════════════════
-//  PWA / SERVICE WORKER
+//  SERVICE WORKER
 // ════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const sw=`const C='prapa-v2';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./?pwa'])));});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
-  const blob=new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  const sw=`const C='prapa-v3';
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./?pwa'])));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  if(e.request.url.includes('script.google.com')||e.request.url.includes('googleapis.com')){
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+});`;
+  const swBlob=new Blob([sw],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" defer></script>
