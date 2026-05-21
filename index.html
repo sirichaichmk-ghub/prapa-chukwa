@@ -1644,4 +1644,11 @@ function showToast(msg) {
 //  PWA / SERVICE WORKER
 // ════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const sw=`const C='prapa-v2';self.addEventListener('install',e=>{e.w
+  const sw=`const C='prapa-v2';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./?pwa'])));});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
+  const blob=new Blob([sw],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" defer></script>
+</body>
+</html>
