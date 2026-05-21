@@ -274,10 +274,10 @@
   <div class="setup-card">
     <div class="setup-icon">💧</div>
     <div class="setup-title">ประปาหมู่บ้านชุกหว้า</div>
-    <div class="setup-desc">ตั้งค่า Apps Script URL เพื่อเชื่อมต่อ Google Sheets</div>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-text"><strong>สร้าง Google Sheet</strong>ตั้งชื่อ <code>ประปาหมู่บ้านชุกหว้า</code></div></div>
-    <div class="setup-step"><div class="step-num">2</div><div class="step-text"><strong>เปิด Apps Script</strong>วางโค้ดจากไฟล์ <code>Code.gs</code> แล้ว Deploy เป็น Web App</div></div>
-    <div class="setup-step"><div class="step-num">3</div><div class="step-text"><strong>วาง URL ด้านล่าง</strong>Execute as: Me / Who has access: Anyone</div></div>
+    <div class="setup-desc">เชื่อมต่อครั้งเดียว แล้วใช้งานได้เลย<br>ข้อมูลถูกเก็บใน Google Sheet ของคุณ 100%</div>
+    <div class="setup-step"><div class="step-num">1</div><div class="step-text"><strong>เปิดชีตของคุณ → เมนู ส่วนขยาย → Apps Script</strong>วางโค้ดจากไฟล์ <code>Code.gs</code> ที่แนบมา แล้วบันทึก</div></div>
+    <div class="setup-step"><div class="step-num">2</div><div class="step-text"><strong>กด Deploy → New deployment → Web app</strong>ตั้ง Execute as: <code>Me</code> / Who has access: <code>Anyone</code></div></div>
+    <div class="setup-step"><div class="step-num">3</div><div class="step-text"><strong>คัดลอก Web app URL มาวางด้านล่าง</strong>(ลงท้ายด้วย <code>/exec</code>)</div></div>
     <div class="settings-row" style="margin-bottom:14px">
       <div class="settings-label">📎 Apps Script URL</div>
       <input type="url" id="setup-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." />
@@ -404,6 +404,14 @@
           <div class="settings-label">📲 PromptPay (เบอร์โทร / เลขบัตรประชาชน)</div>
           <input type="text" id="cfg-promptpay" class="settings-input" placeholder="เช่น 0812345678 หรือ 1234567890123" maxlength="13" inputmode="numeric" />
           <div id="cfg-promptpay-preview" style="margin-top:6px;display:flex;align-items:center;gap:10px"></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">🖨️ ขนาดกระดาษใบเสร็จ</div>
+          <select id="cfg-paper" class="settings-input">
+            <option value="80mm">ใบเสร็จความร้อน 80mm</option>
+            <option value="58mm">ใบเสร็จความร้อน 58mm</option>
+            <option value="A4">กระดาษ A4</option>
+          </select>
         </div>
         <button class="btn btn-primary" style="margin-top:6px" onclick="saveSettings()">💾 บันทึก</button>
       </div>
@@ -578,6 +586,10 @@
 // ════════════════════════════════════════════════════════════
 const WELL_COLORS = ['#1565C0','#00897B','#E64A19','#7B1FA2','#F57F17','#1B5E20','#880E4F','#4A148C'];
 
+// ── ค่าที่ฝังไว้ในระบบ (แก้ที่นี่ได้ถ้าย้ายชีต/โฟลเดอร์) ──
+const SHEET_ID  = '1J3tvkOGpemffWtKQe2NjyJTnhqSrO36AY11enuIHzE4';
+const FOLDER_ID = '1Mjn5p8U7muKhdm2EIqk42x0J6RRQaeON';
+
 const state = {
   houses: [], bills: [], expenses: [],
   wells: [
@@ -587,13 +599,81 @@ const state = {
   ],
   settings: {
     villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8, minCharge:30, minUnits:10,
-    scriptUrl:'', folderId:'', promptpayId:''
+    scriptUrl:'', folderId:FOLDER_ID, sheetId:SHEET_ID, promptpayId:'',
+    paperSize:'80mm'
   },
   selectedHouse: null, readingData: null, selectedWellId: null,
   currentMonth:'', selectedMonth:'', wellFilter:'all',
   demoMode: false, currentReceipt: null
 };
 const STORAGE_KEY = 'pwa_prapa_chukwa_v2';
+
+// ════════════════════════════════════════════════════════════
+//  UI UTILITIES (navigation / modals / toast / loading)
+// ════════════════════════════════════════════════════════════
+function switchView(name) {
+  // ซ่อนทุก view แล้วแสดงอันที่เลือก
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const view = document.getElementById('view-' + name);
+  if (view) view.classList.add('active');
+
+  // อัปเดตปุ่มแถบล่าง
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navBtn = document.getElementById('nav-' + name);
+  if (navBtn) navBtn.classList.add('active');
+
+  // ปุ่ม + ลอย แสดงเฉพาะหน้า "บ้าน"
+  const fab = document.getElementById('fab-add');
+  if (fab) fab.style.display = (name === 'home') ? 'flex' : 'none';
+
+  // เลื่อนขึ้นบนสุดทุกครั้งที่เปลี่ยนหน้า
+  const main = document.querySelector('.main');
+  if (main) main.scrollTop = 0;
+
+  // รีเฟรชเนื้อหาตามหน้า
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'home')      renderHouses(document.getElementById('search-input')?.value || '');
+  if (name === 'history')   { renderBills(); if (typeof renderExpenseList === 'function') renderExpenseList(); }
+  if (name === 'settings')  { populateSettings(); renderWellEditor(); }
+}
+
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.add('active');
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('active');
+}
+
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function showLoading(text) {
+  const o = document.getElementById('loading');
+  const t = document.getElementById('loading-text');
+  if (t && text) t.textContent = text;
+  if (o) o.classList.add('active');
+}
+function hideLoading() {
+  const o = document.getElementById('loading');
+  if (o) o.classList.remove('active');
+}
+
+// ปิด modal เมื่อแตะพื้นหลังสีดำ
+document.addEventListener('click', e => {
+  if (e.target.classList && e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('active');
+  }
+});
+
 
 // ════════════════════════════════════════════════════════════
 //  PROMPTPAY QR — EMV QR Code (PromptPay Thailand)
@@ -705,9 +785,13 @@ function saveToStorage() {
 //  SETUP
 // ════════════════════════════════════════════════════════════
 function finishSetup() {
-  const url = document.getElementById('setup-url').value.trim();
-  if (!url.startsWith('https://script.google.com')) { showToast('⚠️ URL ไม่ถูกต้อง'); return; }
+  let url = document.getElementById('setup-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) { showToast('⚠️ URL ต้องขึ้นต้นด้วย https://script.google.com'); return; }
+  if (!url.includes('/exec')) { showToast('⚠️ URL ต้องลงท้ายด้วย /exec (ไม่ใช่ /dev)'); return; }
   state.settings.scriptUrl = url;
+  state.settings.sheetId = SHEET_ID;
+  state.settings.folderId = FOLDER_ID;
+  state.demoMode = false;
   saveToStorage();
   document.getElementById('setup-screen').style.display = 'none';
   initApp();
@@ -789,10 +873,20 @@ async function apiGet(action, params={}) {
   url.searchParams.set('action', action);
   url.searchParams.set('_t', Date.now()); // cache-bust ทุกครั้ง
   for (const [k,v] of Object.entries(params)) url.searchParams.set(k,v);
-  return (await fetch(url.toString(), { cache:'no-store' })).json();
+  const res = await fetch(url.toString(), { cache:'no-store', redirect:'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
 async function apiPost(data) {
-  return (await fetch(state.settings.scriptUrl, { method:'POST', body:JSON.stringify(data) })).json();
+  // ส่งเป็น text/plain เพื่อเลี่ยง CORS preflight (OPTIONS) ที่ Apps Script ตอบไม่ได้
+  const res = await fetch(state.settings.scriptUrl, {
+    method:'POST',
+    redirect:'follow',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -816,15 +910,20 @@ function getThisMonthBilled() {
  * - ถ้าใหม่ → กำหนด color จาก WELL_COLORS อัตโนมัติ
  */
 function rebuildWellsFromHouses() {
-  const ids = [...new Set(
-    state.houses.map(h => h.wellId).filter(id => id && id.trim())
-  )];
+  // สร้างรายการบ่อจากบ้าน โดยใช้ wellId เป็นคีย์ และ wellName เป็นชื่อแสดง
+  const seen = new Map();
+  state.houses.forEach(h => {
+    if (h.wellId && String(h.wellId).trim() && !seen.has(h.wellId)) {
+      seen.set(h.wellId, h.wellName || h.wellId);
+    }
+  });
+  const ids = [...seen.keys()];
   if (!ids.length) return;
   state.wells = ids.map((id, i) => {
     const existing = state.wells.find(w => w.id === id);
     return {
       id,
-      name:  existing?.name  || id,
+      name:  seen.get(id) || existing?.name || id,
       color: existing?.color || WELL_COLORS[i % WELL_COLORS.length]
     };
   });
@@ -1096,9 +1195,10 @@ function renderHouses(query='') {
     return;
   }
 
-  // Sort: pending → noaccess → done
+  // Sort: pending → noaccess → done, แล้วเรียงตามชื่อ (บ้านเลขที่ส่วนใหญ่เป็น '-')
   const order = v => v === 'done' ? 2 : v === 'noaccess' ? 1 : 0;
-  filtered.sort((a,b) => order(billedMap.get(a.id)) - order(billedMap.get(b.id)) || a.address.localeCompare(b.address,'th'));
+  const sortKey = h => (h.address && h.address !== '-' ? h.address : h.name) || '';
+  filtered.sort((a,b) => order(billedMap.get(a.id)) - order(billedMap.get(b.id)) || sortKey(a).localeCompare(sortKey(b),'th'));
 
   list.innerHTML = filtered.map(h => {
     const status = billedMap.get(h.id);
@@ -1118,8 +1218,8 @@ function renderHouses(query='') {
       <div class="house-avatar" style="background:${avatarBg}">${initials}</div>
       <div class="house-info">
         <div class="house-name">${h.name}</div>
-        <div class="house-meta">📍 ${h.address}</div>
-        <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+        ${(h.address && h.address !== '-') ? `<div class="house-meta">📍 ${h.address}</div>` : ''}
+        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           ${w ? `<span class="house-well-tag" style="background:${w.color}18;color:${w.color}">💧 ${w.name}</span>` : ''}
           <span style="font-size:11px;color:var(--text-muted)">มิเตอร์ล่าสุด: ${h.lastReading||0}</span>
         </div>
@@ -1168,7 +1268,8 @@ function openReading(houseId) {
   state.selectedWellId = house.wellId || state.wells[0]?.id;
   state.readingData = null;
 
-  document.getElementById('reading-house-name').textContent = 'บ้าน ' + house.address;
+  document.getElementById('reading-house-name').textContent =
+    (house.address && house.address !== '-') ? ('บ้าน ' + house.address) : house.name;
   document.getElementById('reading-owner-name').textContent = house.name;
   document.getElementById('reading-prev').textContent = house.lastReading || 0;
   document.getElementById('reading-last-date').textContent = formatLastDate(house.lastDate);
@@ -1340,7 +1441,26 @@ function printReceipt() {
       }
     } catch(e) { console.warn('QR print:', e); }
   }
+  // กำหนดขนาดกระดาษตามการตั้งค่า
+  applyPaperSize(state.settings.paperSize || '58mm');
+
   window.print();
+}
+
+function applyPaperSize(size) {
+  let styleEl = document.getElementById('dynamic-print-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-print-style';
+    document.head.appendChild(styleEl);
+  }
+  if (size === 'A4') {
+    styleEl.textContent = `@media print { @page { size:A4; margin:12mm; } #print-area { width:120mm; font-size:11pt; } #print-area .p-title{font-size:14pt} #print-area .p-big{font-size:18pt} #print-area .p-row{font-size:11pt} #print-area img{width:42mm!important;height:42mm!important} }`;
+  } else if (size === '80mm') {
+    styleEl.textContent = `@media print { @page { size:80mm auto; margin:3mm; } #print-area { width:74mm; font-size:10pt; } #print-area .p-title{font-size:11pt} #print-area .p-big{font-size:15pt} #print-area .p-row{font-size:9.5pt} #print-area img{width:48mm!important;height:48mm!important} }`;
+  } else {
+    styleEl.textContent = `@media print { @page { size:58mm auto; margin:2mm; } #print-area { width:54mm; font-size:8.5pt; } #print-area img{width:36mm!important;height:36mm!important} }`;
+  }
 }
 
 async function saveReceiptImage() {
@@ -1365,7 +1485,8 @@ async function saveReceiptImage() {
         const res = await apiPost({
           action: 'uploadReceipt',
           image: base64,
-          fileName: fname
+          fileName: fname,
+          folderId: state.settings.folderId || FOLDER_ID
         });
         if (res.fileUrl) {
           showToast('✅ บันทึกลง Google Drive แล้ว');
@@ -1399,6 +1520,19 @@ function fallbackDownload(blob, fname) {
   showToast('✅ ดาวน์โหลดรูปแล้ว');
 }
 
+// อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติแบบเงียบ (ไม่รบกวนผู้ใช้)
+async function autoUploadReceiptImage() {
+  const el = document.getElementById('receipt-display');
+  if (!el || !window.html2canvas || state.demoMode || !state.settings.scriptUrl) return;
+  try {
+    const canvas = await html2canvas(el, { scale:2.5, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
+    const r = state.currentReceipt;
+    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
+    const base64 = canvas.toDataURL('image/png').split(',')[1];
+    await apiPost({ action:'uploadReceipt', image:base64, fileName:fname, folderId:state.settings.folderId||FOLDER_ID });
+  } catch(e) { /* เงียบ — ผู้ใช้ยังกดปุ่มบันทึกรูปเองได้ */ }
+}
+
 async function saveToSheetAndDrive() {
   const r=state.currentReceipt; if (!r) return;
   const {h,d,s,billNo,w}=r;
@@ -1428,6 +1562,7 @@ async function saveToSheetAndDrive() {
     await apiPost({ action:'saveReading', ...record });
     showToast('✅ บันทึกลง Sheets เรียบร้อย!');
     btn.textContent='✅ บันทึกแล้ว';
+    autoUploadReceiptImage(); // อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติ (เบื้องหลัง)
     setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 800);
   } catch(e) {
     showToast('⚠️ บันทึกในเครื่องแล้ว (Sheets อาจยังไม่ได้รับ)');
@@ -1475,16 +1610,17 @@ function openAddHouseModal() {
 }
 async function addHouse() {
   const name    = document.getElementById('new-owner').value.trim();
-  const address = document.getElementById('new-address').value.trim();
+  const address = document.getElementById('new-address').value.trim() || '-';
   const wellId  = document.getElementById('new-well').value;
+  const wellName = wellById(wellId)?.name || '';
   const initial = parseInt(document.getElementById('new-initial').value) || 0;
   const note    = document.getElementById('new-note').value.trim();
-  if (!name || !address) { showToast('⚠️ กรอกชื่อและบ้านเลขที่ด้วยครับ'); return; }
-  const newHouse = { id:'H'+Date.now(), name, address, initialReading:initial, lastReading:initial, lastDate:'', wellId, note };
+  if (!name) { showToast('⚠️ กรอกชื่อลูกบ้านด้วยครับ'); return; }
+  const newHouse = { id:'H'+Date.now(), name, address, initialReading:initial, lastReading:initial, lastDate:'', wellId, wellName, note };
   state.houses.push(newHouse);
   saveToStorage(); renderAll(); closeModal('modal-add-house');
   if (!state.demoMode && state.settings.scriptUrl) {
-    try { await apiPost({ action:'addHouse', name, address, initialReading:initial, wellId, note }); showToast('✅ เพิ่มบ้านสำเร็จ!'); }
+    try { await apiPost({ action:'addHouse', name, address, initialReading:initial, wellId, wellName, note }); showToast('✅ เพิ่มบ้านสำเร็จ!'); }
     catch(e) { showToast('✅ เพิ่มในเครื่องแล้ว'); }
   } else { showToast('✅ เพิ่มบ้านสำเร็จ'); }
 }
@@ -1555,6 +1691,8 @@ function populateSettings() {
   document.getElementById('cfg-min-units').value=s.minUnits;
   document.getElementById('cfg-folder-id').value=s.folderId||'';
   document.getElementById('cfg-promptpay').value=s.promptpayId||'';
+  const paperSel = document.getElementById('cfg-paper');
+  if (paperSel) paperSel.value = s.paperSize || '58mm';
   refreshPromptPayPreview();
   // Live preview เมื่อพิมพ์
   document.getElementById('cfg-promptpay').addEventListener('input', refreshPromptPayPreview);
@@ -1584,6 +1722,8 @@ function saveSettings() {
   state.settings.minCharge  = parseFloat(document.getElementById('cfg-min-charge').value)||30;
   state.settings.minUnits   = parseFloat(document.getElementById('cfg-min-units').value)||10;
   state.settings.folderId     = document.getElementById('cfg-folder-id').value.trim();
+  const paperSel = document.getElementById('cfg-paper');
+  if (paperSel) state.settings.paperSize = paperSel.value;
   const ppRaw = document.getElementById('cfg-promptpay').value.trim();
   state.settings.promptpayId = ppRaw;
   saveToStorage();
