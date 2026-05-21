@@ -711,6 +711,7 @@ function skipSetup() {
   state.demoMode = true;
   state.houses = getDemoHouses();
   state.bills  = getDemoBills();
+  rebuildWellsFromHouses();
   document.getElementById('setup-screen').style.display = 'none';
   initApp();
   showToast('📱 Demo Mode');
@@ -760,6 +761,9 @@ async function refreshData() {
     const [r1, r2] = await Promise.all([apiGet('getHouses'), apiGet('getBills')]);
     if (r1.houses) state.houses = r1.houses;
     if (r2.bills)  state.bills  = r2.bills;
+    rebuildWellsFromHouses(); // ← สร้าง wells จากชื่อบ่อใน Sheet อัตโนมัติ
+    buildWellFilterChips();
+    renderWellEditor();
     saveToStorage();
   } catch(e) { showToast('⚠️ ใช้ข้อมูลที่บันทึกไว้'); }
   finally { hideLoading(); }
@@ -799,6 +803,27 @@ function getThisMonthBilled() {
 // ════════════════════════════════════════════════════════════
 //  WELLS UI
 // ════════════════════════════════════════════════════════════
+
+/**
+ * สร้าง state.wells จากชื่อบ่อที่มีอยู่ใน state.houses (column D ของ Sheet)
+ * - ถ้ามีอยู่แล้ว → เก็บ color และ name เดิมไว้ (ผู้ใช้อาจแก้ไขแล้ว)
+ * - ถ้าใหม่ → กำหนด color จาก WELL_COLORS อัตโนมัติ
+ */
+function rebuildWellsFromHouses() {
+  const ids = [...new Set(
+    state.houses.map(h => h.wellId).filter(id => id && id.trim())
+  )];
+  if (!ids.length) return;
+  state.wells = ids.map((id, i) => {
+    const existing = state.wells.find(w => w.id === id);
+    return {
+      id,
+      name:  existing?.name  || id,
+      color: existing?.color || WELL_COLORS[i % WELL_COLORS.length]
+    };
+  });
+}
+
 function wellById(id) { return state.wells.find(w => w.id === id); }
 function wellColor(id) { return wellById(id)?.color || '#90A4AE'; }
 function wellName(id)  { return wellById(id)?.name  || 'ไม่ระบุบ่อ'; }
@@ -1072,7 +1097,7 @@ function renderHouses(query='') {
   list.innerHTML = filtered.map(h => {
     const status = billedMap.get(h.id);
     const w = wellById(h.wellId);
-    const initials = h.name.replace(/^(นาย|นาง|นางสาว)\s*/,'').charAt(0) || '?';
+    const initials = h.name.replace(/^(คุณ|นาย|นาง|นางสาว)\s*/,'').charAt(0) || '?';
     const cardCls = status==='done' ? 'done-card' : status==='noaccess' ? 'noaccess-card' : '';
     const avatarBg = status==='done' ? 'linear-gradient(135deg,#43A047 0%,#A5D6A7 100%)'
       : status==='noaccess' ? 'linear-gradient(135deg,#90A4AE 0%,#CFD8DC 100%)'
@@ -1619,12 +1644,4 @@ function showToast(msg) {
 //  PWA / SERVICE WORKER
 // ════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const sw=`const C='prapa-v2';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['/'])));self.skipWaiting();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
-  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
-}
-const mf={name:'ประปาหมู่บ้านชุกหว้า',short_name:'ประปาชุกหว้า',start_url:'.',display:'standalone',background_color:'#0D47A1',theme_color:'#1565C0',icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>",sizes:'512x512',type:'image/svg+xml'}]};
-const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/json'}));document.head.appendChild(ml);
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" defer></script>
-</body>
-</html>
+  const sw=`const C='prapa-v2';self.addEventListener('install',e=>{e.w
