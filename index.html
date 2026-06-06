@@ -8,1906 +8,1066 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ประปาชุกหว้า" />
-  <link id="pwa-manifest" rel="manifest" />
+  <link id=\"pwa-manifest\" rel=\"manifest\" />
   <title>ประปาหมู่บ้านชุกหว้า</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; font-family: 'Sarabun','Noto Sans Thai',sans-serif; background: #F0F4FF; color: #1a1a2e; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+    
+    /* ปรับโทนสีให้สดใส คมชัด มองเห็นง่ายสำหรับผู้สูงอายุ */
     :root {
-      --primary: #1565C0; --primary-light: #1976D2; --primary-dark: #0D47A1;
-      --accent: #00B0FF; --success: #00C853; --warning: #FFD600;
-      --danger: #F44336; --bg: #F0F4FF; --text: #1a1a2e; --text-muted: #607D8B;
-      --border: #E3ECF7; --radius: 16px;
-      --shadow: 0 4px 20px rgba(21,101,192,0.12);
-      --shadow-lg: 0 8px 32px rgba(21,101,192,0.18);
-      --nav-h: 68px; --header-h: 64px;
+      --primary: #0D47A1;       /* ปรับน้ำเงินให้เข้มขึ้นเพื่อความคมชัดของสายตา */
+      --primary-light: #1565C0;
+      --primary-dark: #0A2F6C;
+      --accent: #0091EA; 
+      --success: #1B5E20;       /* ปรับสีเขียวให้เข้มขึ้น อ่านง่าย */
+      --warning: #F57F17;       /* ส้ม/เหลืองเข้ม */
+      --danger: #B71C1C;        /* แดงเข้มชัดเจน */
+      --bg: #F5F7FA; 
+      --text: #111111;          /* ปรับตัวอักษรหลักให้เกือบดำสนิทเพื่อให้ตัดกับพื้นหลัง */
+      --text-muted: #455A64;    /* เพิ่มความเข้มของตัวอักษรจาง */
+      --border: #CFD8DC; 
+      --radius: 18px;           /* กล่องโค้งมนจับถนัดสายตา */
+      --shadow: 0 4px 16px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --nav-h: 76px;            /* ขยายแถบเมนูด้านล่างให้สูงขึ้น กดง่ายขึ้น */
+      --header-h: 70px;         /* ขยายหัวเว็บให้ใหญ่ขึ้น */
     }
     #app { display:flex; flex-direction:column; height:100vh; max-width:768px; margin:0 auto; background:var(--bg); overflow:hidden; }
 
     /* ── HEADER ── */
-    .header { background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary-light) 100%); color:white; padding:0 16px; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 2px 12px rgba(0,0,0,0.2); z-index:10; }
-    .header-title { display:flex; align-items:center; gap:10px; }
-    .header-title .icon { font-size:26px; }
-    .header-title h1 { font-size:16px; font-weight:700; line-height:1.2; }
-    .header-title p { font-size:11px; opacity:.85; }
-    .header-btn { background:rgba(255,255,255,0.15); border:none; color:white; width:38px; height:38px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-    .header-btn:active { background:rgba(255,255,255,0.3); }
+    .header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%); color:white; padding:0 20px; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,0.15); z-index:10; }
+    .header-title { display:flex; align-items:center; gap:12px; }
+    .header-title .icon { font-size:32px; } /* ขยายไอคอนหัวข้อ */
+    .header-title h1 { font-size:20px; font-weight:800; line-height:1.2; } /* ขยายขนาดชื่อแอป */
+    .header-title p { font-size:13px; opacity:.9; font-weight: 500; }
+    .header-btn { background:rgba(255,255,255,0.22); border:none; color:white; width:44px; height:44px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .header-btn:active { background:rgba(255,255,255,0.4); }
 
     /* ── MAIN ── */
     .main { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:var(--nav-h); }
-    .view { display:none; padding:14px; }
+    .view { display:none; padding:16px; }
     .view.active { display:block; }
 
-    /* ── BOTTOM NAV (4 tabs) ── */
-    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:768px; height:var(--nav-h); background:white; display:flex; border-top:1px solid var(--border); box-shadow:0 -4px 16px rgba(0,0,0,0.08); z-index:30; }
-    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:none; background:none; cursor:pointer; color:var(--text-muted); font-family:inherit; font-size:10px; font-weight:600; transition:color .2s; }
-    .nav-btn .nav-icon { font-size:22px; line-height:1; }
-    .nav-btn.active { color:var(--primary); }
+    /* ── BOTTOM NAV (ขยายพื้นที่ปุ่มสำหรับนิ้วผู้สูงอายุ) ── */
+    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:768px; height:var(--nav-h); background:white; display:flex; border-top:2px solid var(--border); box-shadow:0 -4px 20px rgba(0,0,0,0.1); z-index:30; }
+    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:none; background:none; cursor:pointer; color:var(--text-muted); font-family:inherit; font-size:13px; font-weight:700; transition:color .2s; padding: 6px 0; }
+    .nav-btn .nav-icon { font-size:28px; line-height:1; } /* ขยายไอคอนเมนู */
+    .nav-btn.active { color:var(--primary); background-color: #ECEFF1; } /* ไฮไลต์พื้นหลังเมนูที่เลือกให้ชัดเจน */
 
     /* ── CARDS / SHARED ── */
-    .card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); }
-    .section-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; padding-left:2px; }
+    .card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); border: 1px solid var(--border); }
+    .section-title { font-size:14px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; padding-left:4px; }
 
     /* ── DASHBOARD ── */
-    .dash-hero { background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary-light) 100%); border-radius:var(--radius); padding:18px; color:white; margin-bottom:14px; }
-    .dash-hero-label { font-size:12px; opacity:.8; margin-bottom:4px; }
-    .dash-hero-amount { font-size:36px; font-weight:800; line-height:1; }
-    .dash-hero-sub { font-size:12px; opacity:.8; margin-top:4px; }
-    .dash-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
-    .dash-stat { background:rgba(255,255,255,0.15); border-radius:10px; padding:10px; text-align:center; }
-    .dash-stat .n { font-size:22px; font-weight:800; line-height:1; }
-    .dash-stat .l { font-size:10px; opacity:.85; margin-top:3px; }
+    .dash-hero { background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary-light) 100%); border-radius:var(--radius); padding:22px; color:white; margin-bottom:16px; box-shadow: var(--shadow-lg); }
+    .dash-hero-label { font-size:14px; opacity:.9; margin-bottom:6px; font-weight: 600; }
+    .dash-hero-amount { font-size:42px; font-weight:800; line-height:1; color: #FFF; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .dash-hero-sub { font-size:14px; opacity:.9; margin-top:6px; font-weight: 600; }
+    .dash-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+    .dash-stat { background:rgba(255,255,255,0.2); border-radius:12px; padding:12px 8px; text-align:center; border: 1px solid rgba(255,255,255,0.25); }
+    .dash-stat .n { font-size:24px; font-weight:800; line-height:1; }
+    .dash-stat .l { font-size:13px; opacity:1; margin-top:4px; font-weight: 600; }
 
-    .dash-section { background:white; border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
-    .dash-section h3 { font-size:14px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .dash-section { background:white; border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:var(--shadow); border: 1px solid var(--border); }
+    .dash-section h3 { font-size:16px; font-weight:800; margin-bottom:16px; display:flex; align-items:center; gap:8px; color: var(--primary); }
 
-    /* Well revenue bars */
-    .well-bar-row { margin-bottom:12px; }
+    /* แถบแสดงค่าน้ำแยกตามบ่อ */
+    .well-bar-row { margin-bottom:14px; }
     .well-bar-row:last-child { margin-bottom:0; }
-    .well-bar-header { display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px; }
-    .well-bar-name { font-weight:600; display:flex; align-items:center; gap:6px; }
-    .well-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-    .well-bar-amount { font-weight:700; color:var(--primary); }
-    .well-bar-track { background:#F0F4FF; border-radius:50px; height:10px; overflow:hidden; }
+    .well-bar-header { display:flex; justify-content:space-between; margin-bottom:6px; font-size:15px; font-weight: 700; }
+    .well-bar-name { font-weight:700; display:flex; align-items:center; gap:8px; }
+    .well-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+    .well-bar-amount { font-weight:800; color:var(--primary); }
+    .well-bar-track { background:#E3ECF7; border-radius:50px; height:14px; overflow:hidden; }
     .well-bar-fill { height:100%; border-radius:50px; transition:width .6s ease; }
 
-    /* SVG Chart */
-    .chart-wrap { width:100%; overflow-x:auto; }
-    svg.bar-chart { display:block; }
-    .chart-bar { transition:opacity .2s; cursor:default; }
-    .chart-bar:hover { opacity:.8; }
-
-    /* Top users */
-    .rank-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+    /* รายชื่อผู้ใช้น้ำดีเด่น */
+    .rank-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1.5px solid var(--border); }
     .rank-row:last-child { border-bottom:none; }
-    .rank-num { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
-    .rank-1 { background:#FFD600; color:#333; }
-    .rank-2 { background:#B0BEC5; color:#333; }
-    .rank-3 { background:#BCAAA4; color:#333; }
-    .rank-other { background:#F0F4FF; color:var(--text-muted); }
+    .rank-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; flex-shrink:0; }
+    .rank-1 { background:#FFD600; color:#000; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+    .rank-2 { background:#CFD8DC; color:#000; }
+    .rank-3 { background:#FFE0B2; color:#000; }
+    .rank-other { background:#E3ECF7; color:var(--text-muted); }
     .rank-info { flex:1; min-width:0; }
-    .rank-name { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .rank-addr { font-size:11px; color:var(--text-muted); }
-    .rank-units { font-size:14px; font-weight:700; color:var(--primary); white-space:nowrap; }
+    .rank-name { font-size:16px; font-weight:700; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rank-addr { font-size:13px; color:var(--text-muted); font-weight: 500; }
+    .rank-units { font-size:16px; font-weight:800; color:var(--primary); white-space:nowrap; }
 
-    /* ── HOUSE LIST ── */
-    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
-    .stat-card { background:white; border-radius:12px; padding:10px 6px; text-align:center; box-shadow:var(--shadow); }
-    .stat-card .num { font-size:22px; font-weight:800; line-height:1; }
-    .stat-card .lbl { font-size:10px; color:var(--text-muted); margin-top:3px; }
-    .search-wrap { position:relative; margin-bottom:12px; }
-    .search-wrap input { width:100%; padding:13px 44px; border:2px solid var(--border); border-radius:50px; font-size:15px; font-family:inherit; background:white; outline:none; transition:border-color .2s; }
+    /* ── HOUSE LIST (หน้าจดมิเตอร์ค่าน้ำ) ── */
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+    .stat-card { background:white; border-radius:14px; padding:12px 6px; text-align:center; box-shadow:var(--shadow); border: 1px solid var(--border); }
+    .stat-card .num { font-size:24px; font-weight:800; line-height:1; }
+    .stat-card .lbl { font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600; }
+    
+    /* ช่องค้นหาขนาดใหญ่ */
+    .search-wrap { position:relative; margin-bottom:16px; }
+    .search-wrap input { width:100%; padding:16px 52px; border:2px solid var(--border); border-radius:50px; font-size:18px; font-weight:600; font-family:inherit; background:white; outline:none; transition:border-color .2s; box-shadow: var(--shadow); }
     .search-wrap input:focus { border-color:var(--primary); }
-    .search-icon { position:absolute; left:15px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text-muted); pointer-events:none; }
-    .search-clear { position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text-muted); cursor:pointer; display:none; }
+    .search-icon { position:absolute; left:18px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--text-muted); pointer-events:none; }
+    .search-clear { position:absolute; right:18px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--text-muted); cursor:pointer; display:none; }
 
-    /* Filter chips */
-    .filter-row { display:flex; gap:7px; margin-bottom:12px; overflow-x:auto; padding-bottom:2px; }
-    .filter-chip { background:white; border:2px solid var(--border); border-radius:50px; padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; cursor:pointer; color:var(--text-muted); transition:all .2s; flex-shrink:0; font-family:inherit; }
-    .filter-chip.active { border-color:var(--primary); color:var(--primary); background:#EEF4FF; }
+    /* ตัวเลือกฟิลเตอร์ */
+    .filter-row { display:flex; gap:10px; margin-bottom:16px; overflow-x:auto; padding-bottom:6px; }
+    .filter-chip { background:white; border:2px solid var(--border); border-radius:50px; padding:10px 20px; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; color:var(--text-muted); transition:all .2s; flex-shrink:0; font-family:inherit; box-shadow: var(--shadow); }
+    .filter-chip.active { border-color:var(--primary); color:white; background:var(--primary); }
 
-    .house-list { display:flex; flex-direction:column; gap:9px; }
-    .house-card { background:white; border-radius:var(--radius); padding:14px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow); cursor:pointer; border:2px solid transparent; transition:all .2s; user-select:none; }
-    .house-card:active { transform:scale(.98); border-color:var(--accent); }
-    .house-card.done-card { border-color:#E8F5E9; }
-    .house-card.noaccess-card { opacity:.8; }
-    .house-avatar { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; color:white; font-weight:700; }
+    /* การ์ดรายชื่อบ้าน (ปรับปรุงให้หนา คมชัด กดง่าย ไม่หลง) */
+    .house-list { display:flex; flex-direction:column; gap:12px; }
+    .house-card { background:white; border-radius:var(--radius); padding:18px; display:flex; align-items:center; gap:16px; box-shadow:var(--shadow); cursor:pointer; border:2px solid var(--border); transition:all .2s; user-select:none; }
+    .house-card:active { transform:scale(.97); border-color:var(--primary); }
+    .house-card.done-card { border-color: var(--success); background-color: #F1F8E9; } /* สีพื้นหลังเมื่อจดเสร็จแล้วให้อ่อนๆ แต่ขอบเข้มชัด */
+    .house-card.noaccess-card { border-color: var(--border); background-color: #ECEFF1; opacity:.75; }
+    
+    .house-avatar { width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; color:white; font-weight:800; }
     .house-info { flex:1; min-width:0; }
-    .house-name { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .house-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
-    .house-well-tag { font-size:11px; padding:2px 8px; border-radius:50px; font-weight:600; display:inline-block; margin-top:4px; }
-    .house-badge { font-size:11px; padding:4px 9px; border-radius:50px; font-weight:600; white-space:nowrap; flex-shrink:0; }
-    .badge-pending { background:#FFF9C4; color:#F57F17; }
-    .badge-done { background:#E8F5E9; color:#2E7D32; }
-    .badge-noaccess { background:#ECEFF1; color:#607D8B; }
+    .house-name { font-size:18px; font-weight:800; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .house-meta { font-size:14px; color:var(--text-muted); margin-top:4px; font-weight: 600; }
+    .house-well-tag { font-size:12px; padding:4px 10px; border-radius:50px; font-weight:700; display:inline-block; margin-top:6px; color: white !important; }
+    
+    /* ปลอกป้ายสถานะที่เข้มและอ่านง่ายขึ้นมาก */
+    .house-badge { font-size:13px; padding:6px 14px; border-radius:50px; font-weight:800; white-space:nowrap; flex-shrink:0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .badge-pending { background:#FFF3E0; color:#E65100; border: 1px solid #FFB74D; }
+    .badge-done { background:#E8F5E9; color:#1B5E20; border: 1px solid #81C784; }
+    .badge-noaccess { background:#ECEFF1; color:#37474F; border: 1px solid #B0BEC5; }
 
-    .empty-state { text-align:center; padding:40px 20px; color:var(--text-muted); }
-    .empty-state .emoji { font-size:52px; margin-bottom:10px; }
+    .empty-state { text-align:center; padding:50px 20px; color:var(--text-muted); }
+    .empty-state .emoji { font-size:64px; margin-bottom:12px; }
 
-    /* ── HISTORY ── */
-    .month-selector { display:flex; gap:7px; margin-bottom:12px; overflow-x:auto; padding-bottom:3px; }
-    .month-chip { background:white; border:2px solid var(--border); border-radius:50px; padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; cursor:pointer; color:var(--text-muted); transition:all .2s; flex-shrink:0; }
+    /* ── HISTORY / MONTH CHIPS ── */
+    .month-selector { display:flex; gap:10px; margin-bottom:16px; overflow-x:auto; padding-bottom:6px; }
+    .month-chip { background:white; border:2px solid var(--border); border-radius:50px; padding:10px 20px; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; color:var(--text-muted); box-shadow: var(--shadow); }
     .month-chip.active { background:var(--primary); color:white; border-color:var(--primary); }
-    .bill-card { background:white; border-radius:14px; padding:13px 15px; box-shadow:var(--shadow); margin-bottom:9px; border-left:4px solid var(--primary); }
-    .bill-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
-    .bill-house { font-size:14px; font-weight:700; }
-    .bill-amount { font-size:17px; font-weight:800; color:var(--primary); }
-    .bill-details { display:flex; gap:12px; flex-wrap:wrap; }
-    .bill-detail { font-size:11px; color:var(--text-muted); }
-    .bill-detail span { color:var(--text); font-weight:600; }
+    
+    .bill-card { background:white; border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); margin-bottom:12px; border: 1px solid var(--border); border-left:6px solid var(--primary); }
+    .bill-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .bill-house { font-size:16px; font-weight:800; color: var(--text); }
+    .bill-amount { font-size:20px; font-weight:800; color:var(--primary); }
+    .bill-details { display:flex; gap:16px; flex-wrap:wrap; }
+    .bill-detail { font-size:13px; color:var(--text-muted); font-weight: 500; }
+    .bill-detail span { color:var(--text); font-weight:700; }
 
     /* ── SETTINGS ── */
-    .settings-section { background:white; border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
-    .settings-section h3 { font-size:13px; font-weight:800; color:var(--primary); margin-bottom:13px; text-transform:uppercase; letter-spacing:.5px; }
-    .settings-row { margin-bottom:13px; }
+    .settings-section { background:white; border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:var(--shadow); border: 1px solid var(--border); }
+    .settings-section h3 { font-size:15px; font-weight:800; color:var(--primary); margin-bottom:16px; text-transform:uppercase; letter-spacing:.5px; border-bottom: 2px solid var(--bg); padding-bottom: 6px; }
+    .settings-row { margin-bottom:16px; }
     .settings-row:last-child { margin-bottom:0; }
-    .settings-label { font-size:12px; color:var(--text-muted); margin-bottom:5px; font-weight:600; }
-    .settings-input { width:100%; padding:11px 13px; border:2px solid var(--border); border-radius:11px; font-size:14px; font-family:inherit; color:var(--text); outline:none; transition:border-color .2s; }
+    .settings-label { font-size:14px; color:var(--text); margin-bottom:8px; font-weight:700; }
+    .settings-input { width:100%; padding:14px 16px; border:2px solid var(--border); border-radius:12px; font-size:16px; font-weight:600; font-family:inherit; color:var(--text); outline:none; transition:border-color .2s; }
     .settings-input:focus { border-color:var(--primary); }
 
-    /* Well manager */
-    .well-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
-    .well-item:last-child { border-bottom:none; }
-    .well-color-dot { width:16px; height:16px; border-radius:50%; flex-shrink:0; cursor:pointer; border:2px solid rgba(0,0,0,0.1); }
-    .well-name-input { flex:1; padding:8px 10px; border:2px solid var(--border); border-radius:9px; font-size:14px; font-family:inherit; outline:none; }
-    .well-name-input:focus { border-color:var(--primary); }
-    .well-del-btn { background:none; border:none; font-size:18px; cursor:pointer; color:#EF9A9A; padding:4px; }
-
-    /* ── MODALS ── */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:flex-end; justify-content:center; z-index:100; backdrop-filter:blur(2px); }
+    /* ── MODALS (หน้าต่างป๊อปอัพกรอกเลขมิเตอร์) ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:flex-end; justify-content:center; z-index:100; backdrop-filter:blur(4px); }
     .modal-overlay.active { display:flex; }
-    .modal { background:white; border-radius:24px 24px 0 0; width:100%; max-width:768px; max-height:92vh; overflow-y:auto; padding:22px 18px 32px; animation:slideUp .3s ease; }
-    @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-    .modal-handle { width:40px; height:4px; background:#DDD; border-radius:4px; margin:0 auto 18px; }
-    .modal-title { font-size:19px; font-weight:800; margin-bottom:3px; }
-    .modal-subtitle { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
+    .modal { background:white; border-radius:28px 28px 0 0; width:100%; max-width:768px; max-height:94vh; overflow-y:auto; padding:24px 20px 40px; animation:slideUp .25s cubic-bezier(0.1, 0.7, 0.1, 1); }
+    .modal-handle { width:50px; height:6px; background:#CFD8DC; border-radius:4px; margin:0 auto 20px; }
+    .modal-title { font-size:22px; font-weight:800; color: var(--text); margin-bottom:6px; }
+    .modal-subtitle { font-size:15px; color:var(--text-muted); margin-bottom:20px; font-weight: 500; }
 
-    /* Reading form */
-    .info-box { background:var(--bg); border-radius:13px; padding:13px 15px; margin-bottom:14px; }
-    .info-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; }
+    /* ฟอร์มกรอกข้อมูล */
+    .info-box { background:var(--bg); border-radius:16px; padding:16px; margin-bottom:18px; border: 1px solid var(--border); }
+    .info-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
     .info-row:not(:last-child) { border-bottom:1px solid var(--border); }
-    .info-label { font-size:12px; color:var(--text-muted); }
-    .info-value { font-size:13px; font-weight:700; }
-    .info-value.big { font-size:19px; color:var(--primary); }
-    .input-group { margin-bottom:14px; }
-    .input-label { font-size:13px; font-weight:700; margin-bottom:7px; display:block; }
-    .big-input { width:100%; padding:14px; font-size:26px; font-weight:800; font-family:inherit; border:2px solid var(--border); border-radius:13px; text-align:center; color:var(--primary); outline:none; transition:border-color .2s; -moz-appearance:textfield; }
-    .big-input::-webkit-inner-spin-button, .big-input::-webkit-outer-spin-button { -webkit-appearance:none; }
-    .big-input:focus { border-color:var(--primary); }
+    .info-label { font-size:14px; color:var(--text-muted); font-weight: 600; }
+    .info-value { font-size:16px; font-weight:700; color: var(--text); }
+    .info-value.big { font-size:22px; color:var(--primary); font-weight: 800; }
+    
+    .input-group { margin-bottom:18px; }
+    .input-label { font-size:16px; font-weight:800; margin-bottom:10px; display:block; color: var(--primary); }
+    
+    /* ช่องกรอกเลขมิเตอร์ตัวใหญ่สะใจ ไม่ต้องเพ่ง */
+    .big-input { width:100%; padding:16px; font-size:36px; font-weight:800; font-family:inherit; border:3px solid var(--primary); border-radius:16px; text-align:center; color:var(--primary); background-color: #FFFDE7; outline:none; transition:border-color .2s; }
+    .big-input:focus { border-color:var(--accent); background-color: #FFF; box-shadow: 0 0 0 4px rgba(0,145,234,0.2); }
 
-    /* Well select in reading modal */
-    .well-select-row { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
-    .well-select-chip { padding:7px 14px; border-radius:50px; border:2px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .2s; background:white; color:var(--text-muted); }
-    .well-select-chip.active { color:white; border-color:transparent; }
+    /* ปุ่มเลือกบ่อน้ำในหน้าต่างบันทึก */
+    .well-select-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+    .well-select-chip { padding:10px 18px; border-radius:50px; border:2px solid var(--border); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; background:white; color:var(--text-muted); box-shadow: var(--shadow); }
+    .well-select-chip.active { color:white; border-color:transparent; font-weight:800; }
 
-    .calc-box { border-radius:13px; padding:14px 17px; color:white; margin-bottom:18px; display:none; }
+    /* กล่องสรุปคำนวณเงิน */
+    .calc-box { border-radius:16px; padding:18px; color:white; margin-bottom:22px; box-shadow: var(--shadow); }
     .calc-box.visible { display:block; }
-    .calc-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; }
-    .calc-row:not(:last-child) { border-bottom:1px solid rgba(255,255,255,0.2); }
-    .calc-total { font-size:20px; font-weight:800; color:var(--warning); }
+    .calc-row { display:flex; justify-content:space-between; padding:6px 0; font-size:15px; font-weight: 600; }
+    .calc-row:not(:last-child) { border-bottom:1px solid rgba(255,255,255,0.25); }
+    .calc-total { font-size:24px; font-weight:800; color:#FFEA00; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
 
-    /* Receipt */
-    .receipt-preview { background:white; border-radius:13px; padding:14px 10px; font-family:'Courier New',monospace; font-size:11px; border:1px dashed #ccc; margin-bottom:18px; width:218px; margin-left:auto; margin-right:auto; }
-    .receipt-title { font-size:12px; font-weight:700; text-align:center; line-height:1.5; margin-bottom:3px; }
-    .receipt-divider { border:none; border-top:1px dashed #999; margin:5px 0; }
-    .receipt-row { display:flex; justify-content:space-between; margin:2px 0; font-size:10px; }
-    .receipt-total-row { display:flex; justify-content:space-between; font-size:12px; font-weight:700; margin:2px 0; }
-    .receipt-big { font-size:18px; font-weight:800; text-align:center; color:var(--primary); margin:6px 0; }
-    .receipt-qr-wrap { text-align:center; margin:6px 0 2px; }
-    .receipt-qr-wrap canvas, .receipt-qr-wrap img { width:120px !important; height:120px !important; display:block; margin:0 auto; }
+    /* ใบเสร็จจำลอง */
+    .receipt-preview { background:white; border-radius:14px; padding:16px 12px; font-family:'Courier New',monospace; font-size:13px; font-weight:600; border:2px dashed #90A4AE; margin-bottom:22px; width:100%; max-width:260px; margin-left:auto; margin-right:auto; box-shadow: var(--shadow); }
+    .receipt-title { font-size:14px; font-weight:700; text-align:center; line-height:1.5; margin-bottom:6px; color: #000; }
+    .receipt-divider { border:none; border-top:2px dashed #78909C; margin:8px 0; }
+    .receipt-row { display:flex; justify-content:space-between; margin:4px 0; font-size:12px; color: #333; }
+    .receipt-total-row { display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin:4px 0; color: #000; }
+    .receipt-big { font-size:22px; font-weight:800; text-align:center; color:var(--primary); margin:8px 0; }
+    .receipt-qr-wrap { text-align:center; margin:10px 0 4px; background: #FFF; padding: 6px; border-radius: 8px; }
 
-    /* ── BUTTONS ── */
-    .btn { width:100%; padding:15px; border-radius:13px; border:none; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:all .2s; }
-    .btn:active { transform:scale(.97); }
-    .btn-primary { background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%); color:white; box-shadow:0 4px 14px rgba(21,101,192,.3); }
-    .btn-success { background:linear-gradient(135deg,#2E7D32 0%,#43A047 100%); color:white; box-shadow:0 4px 14px rgba(46,125,50,.3); }
-    .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); }
-    .btn-danger-outline { background:transparent; color:var(--danger); border:2px solid var(--danger); }
-    .btn-row { display:flex; gap:9px; }
+    /* ── BUTTONS (ปุ่มขนาดใหญ่พิเศษเพื่อผู้สูงอายุ) ── */
+    .btn { width:100%; padding:18px; border-radius:16px; border:none; font-size:18px; font-weight:800; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all .2s; box-shadow: var(--shadow); }
+    .btn:active { transform:scale(.96); }
+    .btn-primary { background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%); color:white; box-shadow:0 4px 14px rgba(13,71,161,.35); }
+    .btn-success { background:linear-gradient(135deg,#1B5E20 0%,#2E7D32 100%); color:white; box-shadow:0 4px 14px rgba(27,94,32,.35); }
+    .btn-outline { background:transparent; color:var(--primary); border:2.5px solid var(--primary); background-color: white; }
+    .btn-danger-outline { background:transparent; color:var(--danger); border:2.5px solid var(--danger); background-color: white; }
+    .btn-row { display:flex; gap:12px; }
 
-    /* FAB */
-    .fab { position:fixed; bottom:calc(var(--nav-h) + 14px); right:18px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%); color:white; font-size:26px; border:none; cursor:pointer; box-shadow:0 6px 20px rgba(21,101,192,.4); display:flex; align-items:center; justify-content:center; z-index:20; transition:transform .2s; }
-    .fab:active { transform:scale(.92); }
+    /* ปุ่มลอย FAB (มุมขวาขยายใหญ่ขึ้น) ── */
+    .fab { position:fixed; bottom:calc(var(--nav-h) + 20px); right:20px; width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%); color:white; font-size:32px; border:none; cursor:pointer; box-shadow:0 6px 24px rgba(13,71,161,.4); display:flex; align-items:center; justify-content:center; z-index:20; transition:transform .2s; }
+    .fab:active { transform:scale(.9); }
 
-    /* ── SETUP ── */
-    #setup-screen { position:fixed; inset:0; background:linear-gradient(160deg,var(--primary-dark) 0%,var(--primary-light) 50%,var(--accent) 100%); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
-    .setup-card { background:white; border-radius:24px; padding:28px 22px; max-width:400px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
-    .setup-icon { font-size:52px; text-align:center; margin-bottom:10px; }
-    .setup-title { font-size:21px; font-weight:800; text-align:center; color:var(--primary); margin-bottom:5px; }
-    .setup-desc { font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:20px; line-height:1.6; }
-    .setup-step { display:flex; gap:10px; margin-bottom:16px; background:var(--bg); border-radius:13px; padding:13px; }
-    .step-num { width:26px; height:26px; background:var(--primary); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
-    .step-text { font-size:12px; line-height:1.5; }
-    .step-text strong { display:block; margin-bottom:2px; }
-    .step-text code { background:#E8EAF6; padding:2px 5px; border-radius:4px; font-size:10px; }
-
-    /* ── LOADING / TOAST ── */
-    .loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; flex-direction:column; z-index:150; gap:12px; }
-    .loading-overlay.active { display:flex; }
-    .spinner { width:44px; height:44px; border:5px solid #E3ECF7; border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .loading-text { font-size:14px; color:var(--text-muted); font-weight:600; }
-    .toast { position:fixed; bottom:calc(var(--nav-h)+16px); left:50%; transform:translateX(-50%) translateY(20px); background:#1B2A35; color:white; padding:13px 22px; border-radius:50px; font-size:14px; font-weight:700; opacity:0; transition:all .3s; z-index:1001; white-space:nowrap; box-shadow:0 6px 24px rgba(0,0,0,.35); pointer-events:none; }
+    /* ── TOAST (แจ้งเตือนตัวใหญ่ขึ้น) ── */
+    .toast { position:fixed; bottom:calc(var(--nav-h) + 20px); left:50%; transform:translateX(-50%) translateY(20px); background:#263238; color:white; padding:16px 28px; border-radius:50px; font-size:16px; font-weight:700; opacity:0; transition:all .3s; z-index:1001; white-space:nowrap; box-shadow:0 8px 32px rgba(0,0,0,0.3); pointer-events:none; border: 1px solid rgba(255,255,255,0.15); }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-    /* ── EXPENSES ── */
-    .expense-card { background:white; border-radius:14px; padding:13px 15px; box-shadow:var(--shadow); margin-bottom:9px; border-left:4px solid #E64A19; }
-    .expense-header { display:flex; justify-content:space-between; align-items:flex-start; }
-    .expense-desc { font-size:14px; font-weight:700; }
-    .expense-cat { font-size:11px; color:var(--text-muted); margin-top:2px; }
-    .expense-amount { font-size:17px; font-weight:800; color:#E64A19; white-space:nowrap; }
-    .expense-del { background:none; border:none; font-size:16px; cursor:pointer; color:#FFCCBC; padding:2px 4px; }
-    .expense-del:active { color:#E64A19; }
-    .net-box { border-radius:13px; padding:14px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
-    .net-box.profit { background:#E8F5E9; }
-    .net-box.loss   { background:#FFEBEE; }
-    .net-label { font-size:13px; font-weight:700; }
-    .net-amount { font-size:22px; font-weight:800; }
-    .net-box.profit .net-amount { color:#2E7D32; }
-    .net-box.loss   .net-amount { color:#C62828; }
-    /* History tabs */
-    .tab-row { display:flex; gap:0; margin-bottom:12px; background:white; border-radius:12px; padding:4px; box-shadow:var(--shadow); }
-    .tab-btn { flex:1; padding:9px; border:none; border-radius:9px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; background:none; color:var(--text-muted); transition:all .2s; }
-    .tab-btn.active { background:var(--primary); color:white; }
-
-    /* ── PRINT ── */
-    @media print {
-      body * { visibility:hidden !important; }
-      #print-area, #print-area * { visibility:visible !important; }
-      #print-area { position:fixed; top:0; left:0; }
-      @page { size:58mm auto; margin:2mm; }
-    }
-    #print-area { display:none; width:54mm; font-family:'Courier New',monospace; font-size:8.5pt; color:black; padding:1mm 2mm; }
-    #print-area .p-center { text-align:center; }
-    #print-area .p-title { font-size:9.5pt; font-weight:bold; text-align:center; line-height:1.4; }
-    #print-area .p-big { font-size:13pt; font-weight:bold; text-align:center; margin:1.5mm 0; }
-    #print-area .p-row { display:flex; justify-content:space-between; margin:0.8mm 0; font-size:8pt; }
-    #print-area .p-divider { border:none; border-top:1px dashed #000; margin:1.5mm 0; }
-    #print-area img { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+    .shimmer { background:#f6f7f8; background:linear-gradient(90deg,#eceff1 25%,#f4f6f7 50%,#eceff1 75%); background-size:200% 100%; animation:shimmerAnimation 1.5s infinite; }
+    @keyframes shimmerAnimation { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+    .pull-to-refresh { text-align:center; padding:10px; font-size:13px; color:var(--text-muted); font-weight:600; display:none; }
   </style>
 </head>
 <body>
 
-<!-- SETUP SCREEN -->
-<div id="setup-screen">
-  <div class="setup-card">
-    <div class="setup-icon">💧</div>
-    <div class="setup-title">ประปาหมู่บ้านชุกหว้า</div>
-    <div class="setup-desc">เชื่อมต่อครั้งเดียว แล้วใช้งานได้เลย<br>ข้อมูลถูกเก็บใน Google Sheet ของคุณ 100%</div>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-text"><strong>เปิดชีตของคุณ → เมนู ส่วนขยาย → Apps Script</strong>วางโค้ดจากไฟล์ <code>Code.gs</code> ที่แนบมา แล้วบันทึก</div></div>
-    <div class="setup-step"><div class="step-num">2</div><div class="step-text"><strong>กด Deploy → New deployment → Web app</strong>ตั้ง Execute as: <code>Me</code> / Who has access: <code>Anyone</code></div></div>
-    <div class="setup-step"><div class="step-num">3</div><div class="step-text"><strong>คัดลอก Web app URL มาวางด้านล่าง</strong>(ลงท้ายด้วย <code>/exec</code>)</div></div>
-    <div class="settings-row" style="margin-bottom:14px">
-      <div class="settings-label">📎 Apps Script URL</div>
-      <input type="url" id="setup-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." />
-    </div>
-    <button class="btn btn-primary" onclick="finishSetup()">✅ เริ่มใช้งาน</button>
-    <button class="btn btn-outline" style="margin-top:9px" onclick="skipSetup()">ข้ามตอนนี้ (ใช้ข้อมูลตัวอย่าง)</button>
-  </div>
-</div>
+  <div id="app">
+    <header class="header">
+      <div class="header-title">
+        <span class="icon">💧</span>
+        <div>
+          <h1>ประปาหมู่บ้านชุกหว้า</h1>
+          <p id="sub-title">ระบบบันทึกค่าน้ำ</p>
+        </div>
+      </div>
+      <button class="header-btn" id="btn-sync" onclick="syncData()">🔄</button>
+    </header>
 
-<!-- MAIN APP -->
-<div id="app">
-  <div class="header">
-    <div class="header-title">
-      <div class="icon">💧</div>
-      <div><h1>ประปาหมู่บ้านชุกหว้า</h1><p id="header-month">กำลังโหลด...</p></div>
-    </div>
-    <button class="header-btn" onclick="refreshData()">🔄</button>
-  </div>
+    <main class="main">
+      <div class="pull-to-refresh" id="ptr">⬇️ ลากลงเพื่อรีเฟรชข้อมูล...</div>
 
-  <div class="main">
+      <div class="view active" id="view-dash">
+        <div class="dash-hero">
+          <p class="dash-hero-label">ยอดจัดเก็บประจำเดือนนี้</p>
+          <div class="dash-hero-amount" id="dash-total-money">0.00</div>
+          <p class="dash-hero-sub" id="dash-month-label">ประจำเดือน --</p>
+          <div class="dash-stats">
+            <div class="dash-stat">
+              <div class="n" id="stat-done-pct">0%</div>
+              <div class="l">ความคืบหน้า</div>
+            </div>
+            <div class="dash-stat">
+              <div class="n" id="stat-total-units">0</div>
+              <div class="l">หน่วยรวม</div>
+            </div>
+            <div class="dash-stat">
+              <div class="n" id="stat-avg-bill">0</div>
+              <div class="l">เฉลี่ย/บ้าน</div>
+            </div>
+          </div>
+        </div>
 
-    <!-- ══ DASHBOARD ══ -->
-    <div class="view active" id="view-dashboard">
-      <!-- Hero card -->
-      <div class="dash-hero" id="dash-hero">
-        <div class="dash-hero-label">💰 รายรับรวมเดือนนี้</div>
-        <div class="dash-hero-amount" id="dash-total-amount">0 บาท</div>
-        <div class="dash-hero-sub" id="dash-total-sub">กำลังคำนวณ...</div>
-        <div class="dash-stats">
-          <div class="dash-stat"><div class="n" id="dash-s-done">0</div><div class="l">✅ อ่านแล้ว</div></div>
-          <div class="dash-stat"><div class="n" id="dash-s-pending">0</div><div class="l">⏳ ยังไม่อ่าน</div></div>
-          <div class="dash-stat"><div class="n" id="dash-s-noaccess">0</div><div class="l">🚫 ไม่ใช้น้ำ</div></div>
+        <div class="dash-section">
+          <h3>📊 ยอดค่าน้ำแยกตามบ่อประปา</h3>
+          <div id="well-bars-container"></div>
+        </div>
+
+        <div class="dash-section">
+          <h3>👑 แชมป์ใช้น้ำสูงสุดประจำเดือน</h3>
+          <div id="rank-container"></div>
         </div>
       </div>
 
-      <!-- Per-well revenue -->
-      <div class="dash-section">
-        <h3>💧 รายรับแยกตามบ่อ</h3>
-        <div id="dash-well-bars">
-          <div class="empty-state" style="padding:20px"><p>ยังไม่มีข้อมูลเดือนนี้</p></div>
+      <div class="view" id="view-houses">
+        <div class="stats-row">
+          <div class="stat-card" style="border-bottom:4px solid var(--text-muted)"><div class="num" id="s-all">0</div><div class="lbl">ทั้งหมด</div></div>
+          <div class="stat-card" style="border-bottom:4px solid var(--warning)"><div class="num" id="s-pending" style="color:var(--warning)">0</div><div class="lbl">รอดำเนินการ</div></div>
+          <div class="stat-card" style="border-bottom:4px solid var(--success)"><div class="num" id="s-done" style="color:var(--success)">0</div><div class="lbl">จดแล้ว</div></div>
+          <div class="stat-card" style="border-bottom:4px solid var(--danger)"><div class="num" id="s-noaccess" style="color:var(--danger)">0</div><div class="lbl">เข้าไม่ได้</div></div>
+        </div>
+
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="ค้นหาชื่อบ้าน, บ้านเลขที่..." oninput="handleSearch()" />
+          <span class="search-clear" id="search-clear" onclick="clearSearch()">❌</span>
+        </div>
+
+        <div class="filter-row" id="well-filter-row">
+          <button class="filter-chip active" onclick="filterWell('ALL', this)">🏡 ทั้งหมด</button>
+        </div>
+
+        <div class="house-list" id="house-list-container"></div>
+      </div>
+
+      <div class="view" id="view-history">
+        <div class="month-selector" id="history-months"></div>
+        <div id="history-list-container"></div>
+      </div>
+
+      <div class="view" id="view-settings">
+        <div class="settings-section">
+          <h3>⚙️ ตั้งค่าระบบประปา</h3>
+          <div class="settings-row">
+            <label class="settings-label">URL สำหรับเชื่อมต่อข้อมูล (Google Apps Script URL)</label>
+            <input type="text" class="settings-input" id="cfg-url" placeholder="https://script.google.com/.../exec" onchange="saveConfig()" />
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>ℹ️ เกี่ยวกับโปรแกรม</h3>
+          <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">
+            ระบบบันทึกค่าน้ำประปาหมู่บ้านชุกหว้า (เวอร์ชันประหยัดข้อมูล)<br/>
+            ออกแบบมาเพื่อให้ทำงานได้เสถียรและรวดเร็วบนโทรศัพท์มือถือ แม้ในพื้นที่สัญญาณน้อย
+          </p>
+          <button class="btn btn-outline" style="margin-top:16px;" onclick="clearLocalCache()">🧹 ล้างแคชและข้อมูลขยะ</button>
         </div>
       </div>
+    </main>
 
-      <!-- Monthly chart -->
-      <div class="dash-section">
-        <h3>📈 รายรับย้อนหลัง 6 เดือน</h3>
-        <div class="chart-wrap" id="dash-chart-wrap">
-          <div class="empty-state" style="padding:20px"><p>ยังไม่มีข้อมูล</p></div>
+    <nav class="bottom-nav">
+      <button class="nav-btn active" onclick="switchView('dash', this)"><span class="nav-icon">📊</span>หน้าแรก</button>
+      <button class="nav-btn" onclick="switchView('houses', this)"><span class="nav-icon">📝</span>จดค่าน้ำ</button>
+      <button class="nav-btn" onclick="switchView('history', this)"><span class="nav-icon">📜</span>ประวัติ</button>
+      <button class="nav-btn" onclick="switchView('settings', this)"><span class="nav-icon">⚙️</span>ตั้งค่า</button>
+    </nav>
+
+    <button class="fab" id="fab-add" onclick="openQuickAdd()">+</button>
+
+    <div class="toast" id="toast">แจ้งเตือนข้อมูลสำเร็จ</div>
+
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title" id="m-title">บันทึกค่าน้ำ</h2>
+        <p class="modal-subtitle" id="m-subtitle">บ้านเลขที่ --</p>
+
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">เลขมิเตอร์ครั้งก่อน</span>
+            <span class="info-value big" id="m-prev">0</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ผู้ใช้น้ำ</span>
+            <span class="info-value" id="m-owner">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">บ่อประปาที่ใช้</span>
+            <span class="info-value" id="m-well">--</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="m-current">🔢 เลขมิเตอร์ครั้งนี้ (กดพิมพ์ตัวเลข)</label>
+          <input type="number" step="any" class="big-input" id="m-current" inputmode="numeric" oninput="onCurrentInput()" placeholder="0000" />
+        </div>
+
+        <div class="well-select-row" id="modal-status-row" style="margin-bottom:20px;">
+          <button class="well-select-chip active" id="ms-done" onclick="setModalStatus('DONE')" style="border-color:var(--success); color:var(--success);">✅ จดมิเตอร์ปกติ</button>
+          <button class="well-select-chip" id="ms-noaccess" onclick="setModalStatus('NO_ACCESS')" style="border-color:var(--danger); color:var(--danger);">❌ เข้าตรวจไม่ได้ / มิเตอร์เสีย</button>
+        </div>
+
+        <div class="calc-box" id="m-calc-box" style="display:none;">
+          <div class="receipt-preview" id="m-receipt">
+            <div class="receipt-title">ใบแจ้งค่าน้ำประปา<br/>หมู่บ้านชุกหว้า</div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-row"><span class="lbl">บ้านเลขที่:</span><span class="val" id="r-addr">--</span></div>
+            <div class="receipt-row"><span class="lbl">ผู้ใช้น้ำ:</span><span class="val" id="r-owner">--</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-row"><span class="lbl">เลขครั้งนี้:</span><span class="val" id="r-curr">0</span></div>
+            <div class="receipt-row"><span class="lbl">เลขครั้งก่อน:</span><span class="val" id="r-prev">0</span></div>
+            <div class="receipt-row"><span class="lbl">ใช้น้ำไป:</span><span class="val" id="r-units">0 หน่วย</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-row" id="r-step-detail" style="font-size:11px; color:#555; display:block; white-space:pre-line;"></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total-row"><span class="lbl">รวมทั้งสิ้น:</span><span class="val" id="r-total">0.00 บาท</span></div>
+            <div class="receipt-big" id="r-big-total">0.00 ฿</div>
+            <div class="receipt-qr-wrap" id="r-qr-wrap" style="display:none;">
+              <p style="font-size:10px; margin-bottom:4px; font-family:inherit; font-weight:bold;">สแกนเพื่อจ่ายเงิน</p>
+              <img id="r-qr-img" src="" style="max-width:100%; height:auto;" />
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-outline" style="flex:1;" onclick="closeModal(null)">ยกเลิก</button>
+          <button class="btn btn-success" style="flex:2;" onclick="saveMeter()">💾 บันทึกข้อมูล</button>
         </div>
       </div>
-
-      <!-- Top / bottom users -->
-      <div class="dash-section">
-        <h3>🏆 ใช้น้ำมากสุด (เดือนนี้)</h3>
-        <div id="dash-top-users"><div class="empty-state" style="padding:16px"><p>ยังไม่มีข้อมูล</p></div></div>
-      </div>
-      <div class="dash-section">
-        <h3>💤 ใช้น้ำน้อยสุด (เดือนนี้)</h3>
-        <div id="dash-bot-users"><div class="empty-state" style="padding:16px"><p>ยังไม่มีข้อมูล</p></div></div>
-      </div>
-
-      <!-- Net income -->
-      <div id="dash-net-box" class="net-box profit" style="display:none">
-        <div><div class="net-label">💵 กำไรสุทธิเดือนนี้</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px" id="dash-net-sub">รายรับ - ค่าใช้จ่าย</div></div>
-        <div class="net-amount" id="dash-net-amount">0 บาท</div>
-      </div>
-
-      <!-- Expenses -->
-      <div class="dash-section">
-        <h3 style="justify-content:space-between">
-          <span>🔧 ค่าใช้จ่ายเดือนนี้</span>
-          <button onclick="openAddExpenseModal()" style="background:var(--primary);color:white;border:none;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">➕ บันทึก</button>
-        </h3>
-        <div id="dash-expense-total" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
-        <div id="dash-expense-list"><div class="empty-state" style="padding:12px"><p>ยังไม่มีค่าใช้จ่ายเดือนนี้</p></div></div>
-      </div>
     </div>
 
-    <!-- ══ HOUSE LIST ══ -->
-    <div class="view" id="view-home">
-      <div class="stats-row">
-        <div class="stat-card"><div class="num" id="stat-total" style="color:var(--primary)">-</div><div class="lbl">ทั้งหมด</div></div>
-        <div class="stat-card"><div class="num" id="stat-done" style="color:#00C853">-</div><div class="lbl">อ่านแล้ว</div></div>
-        <div class="stat-card"><div class="num" id="stat-pending" style="color:#FFD600">-</div><div class="lbl">ยังไม่อ่าน</div></div>
-        <div class="stat-card"><div class="num" id="stat-noaccess" style="color:#90A4AE">-</div><div class="lbl">ไม่ใช้น้ำ</div></div>
-      </div>
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="ค้นหาชื่อ หรือบ้านเลขที่..." oninput="filterHouses()" />
-        <span class="search-clear" id="search-clear" onclick="clearSearch()">✕</span>
-      </div>
-      <!-- Well filter chips -->
-      <div class="filter-row" id="well-filter-row">
-        <button class="filter-chip active" onclick="setWellFilter('all',this)">🏠 ทั้งหมด</button>
-      </div>
-      <div class="section-title" id="house-section-title">รายชื่อบ้าน</div>
-      <div class="house-list" id="house-list">
-        <div class="empty-state"><div class="emoji">⏳</div><p>กำลังโหลด...</p></div>
-      </div>
-    </div>
+    <div class="modal-overlay" id="modal-quick-overlay" onclick="closeQuickAddModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title">เพิ่มบ้านใหม่</h2>
+        <p class="modal-subtitle">ลงทะเบียนผู้ใช้น้ำรายใหม่เข้าระบบ</p>
 
-    <!-- ══ HISTORY ══ -->
-    <div class="view" id="view-history">
-      <div class="month-selector" id="month-selector"></div>
-      <div class="tab-row">
-        <button class="tab-btn active" id="tab-bills" onclick="switchHistoryTab('bills')">🧾 ใบเสร็จ</button>
-        <button class="tab-btn" id="tab-expenses" onclick="switchHistoryTab('expenses')">🔧 ค่าใช้จ่าย</button>
-      </div>
-      <div id="bill-list"><div class="empty-state"><div class="emoji">📋</div><p>ยังไม่มีประวัติ</p></div></div>
-      <div id="expense-list" style="display:none"><div class="empty-state"><div class="emoji">🔧</div><p>ยังไม่มีค่าใช้จ่าย</p></div></div>
-    </div>
-
-    <!-- ══ SETTINGS ══ -->
-    <div class="view" id="view-settings">
-      <div class="settings-section">
-        <h3>⚙️ ระบบ</h3>
-        <div class="settings-row"><div class="settings-label">📎 Apps Script URL</div><input type="url" id="cfg-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." /></div>
-        <div class="settings-row"><div class="settings-label">🏘️ ชื่อหมู่บ้าน</div><input type="text" id="cfg-village" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">💧 ราคาต่อหน่วย (บาท)</div><input type="number" id="cfg-unit-price" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">📦 ค่าบริการขั้นต่ำ (บาท)</div><input type="number" id="cfg-min-charge" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">📊 หน่วยสำหรับค่าขั้นต่ำ</div><input type="number" id="cfg-min-units" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">📁 Drive Folder ID (ใบเสร็จ)</div><input type="text" id="cfg-folder-id" class="settings-input" placeholder="ID จาก URL โฟลเดอร์ Drive" /></div>
         <div class="settings-row">
-          <div class="settings-label">📲 PromptPay (เบอร์โทร / เลขบัตรประชาชน)</div>
-          <input type="text" id="cfg-promptpay" class="settings-input" placeholder="เช่น 0812345678 หรือ 1234567890123" maxlength="13" inputmode="numeric" />
-          <div id="cfg-promptpay-preview" style="margin-top:6px;display:flex;align-items:center;gap:10px"></div>
+          <label class="settings-label">บ้านเลขที่ *</label>
+          <input type="text" class="settings-input" id="qa-addr" placeholder="ตัวอย่าง: 12/3" />
         </div>
         <div class="settings-row">
-          <div class="settings-label">🖨️ ขนาดกระดาษใบเสร็จ</div>
-          <select id="cfg-paper" class="settings-input">
-            <option value="80mm">ใบเสร็จความร้อน 80mm</option>
-            <option value="58mm">ใบเสร็จความร้อน 58mm</option>
-            <option value="A4">กระดาษ A4</option>
-          </select>
+          <label class="settings-label">ชื่อผู้ใช้น้ำ / เจ้าของบ้าน</label>
+          <input type="text" class="settings-input" id="qa-owner" placeholder="ชื่อ-นามสกุล" />
         </div>
-        <button class="btn btn-primary" style="margin-top:6px" onclick="saveSettings()">💾 บันทึก</button>
-      </div>
+        <div class="settings-row">
+          <label class="settings-label">เลขมิเตอร์เริ่มต้น *</label>
+          <input type="number" class="settings-input" id="qa-init" placeholder="0" value="0" />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label">เลือกบ่อประปา *</label>
+          <div class="well-select-row" id="qa-well-row"></div>
+        </div>
 
-      <!-- Well Manager -->
-      <div class="settings-section">
-        <h3>💧 จัดการบ่อประปา</h3>
-        <div id="well-list-editor"></div>
-        <button class="btn btn-outline" style="margin-top:12px" onclick="addWell()">➕ เพิ่มบ่อใหม่</button>
-        <button class="btn btn-primary" style="margin-top:9px" onclick="saveWells()">💾 บันทึกบ่อประปา</button>
-      </div>
-
-      <div class="settings-section">
-        <h3>🏠 จัดการบ้าน</h3>
-        <button class="btn btn-outline" onclick="openAddHouseModal()">➕ เพิ่มบ้านใหม่</button>
-      </div>
-    </div>
-
-  </div><!-- .main -->
-
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-btn active" id="nav-dashboard" onclick="switchView('dashboard')"><span class="nav-icon">📊</span>ภาพรวม</button>
-    <button class="nav-btn" id="nav-home" onclick="switchView('home')"><span class="nav-icon">🏠</span>บ้าน</button>
-    <button class="nav-btn" id="nav-history" onclick="switchView('history')"><span class="nav-icon">📋</span>ประวัติ</button>
-    <button class="nav-btn" id="nav-settings" onclick="switchView('settings')"><span class="nav-icon">⚙️</span>ตั้งค่า</button>
-  </div>
-</div><!-- #app -->
-
-<!-- FAB -->
-<button class="fab" id="fab-add" onclick="openAddHouseModal()" style="display:none">＋</button>
-
-<!-- MODAL: READING -->
-<div class="modal-overlay" id="modal-reading">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-      <div><div class="modal-title" id="reading-house-name">บ้าน -</div><div class="modal-subtitle" id="reading-owner-name">-</div></div>
-      <button onclick="closeModal('modal-reading')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
-    </div>
-
-    <!-- Well display (static — ยึดตามที่กำหนดในระบบ) -->
-    <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:13px;color:var(--text-muted)">💧 บ่อประปา:</span>
-      <span id="reading-well-badge" style="padding:3px 12px;border-radius:50px;font-size:13px;font-weight:700;color:white;background:var(--primary)">-</span>
-    </div>
-
-    <div class="info-box">
-      <div class="info-row"><span class="info-label">มิเตอร์ครั้งก่อน</span><span class="info-value big" id="reading-prev">-</span></div>
-      <div class="info-row"><span class="info-label">วันที่อ่านครั้งก่อน</span><span class="info-value" id="reading-last-date">-</span></div>
-    </div>
-    <div class="input-group">
-      <label class="input-label">📟 เลขมิเตอร์ครั้งนี้</label>
-      <input type="number" id="current-reading-input" class="big-input" placeholder="0000" inputmode="numeric" oninput="onReadingChange()" />
-    </div>
-    <div class="calc-box" id="calc-box" style="background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary-light) 100%)">
-      <div class="calc-row"><span>หน่วยที่ใช้</span><span id="calc-units">-</span></div>
-      <div class="calc-row"><span id="calc-rate-label">ค่าน้ำ</span><span id="calc-water">-</span></div>
-      <div class="calc-row"><span>ค่าบริการ</span><span id="calc-service">-</span></div>
-      <div class="calc-row" style="padding-top:8px;margin-top:4px;border-top:1px solid rgba(255,255,255,.3)">
-        <span style="font-size:15px;font-weight:700">ยอดรวม</span>
-        <span class="calc-total" id="calc-total">-</span>
+        <div class="btn-row" style="margin-top:24px;">
+          <button class="btn btn-outline" style="flex:1;" onclick="closeQuickAddModal(null)">ยกเลิก</button>
+          <button class="btn btn-primary" style="flex:2;" onclick="saveQuickAdd()">➕ เพิ่มลงระบบ</button>
+        </div>
       </div>
     </div>
-    <div class="btn-row" style="margin-bottom:9px">
-      <button class="btn btn-outline" onclick="closeModal('modal-reading')" style="flex:1">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="openReceipt()" style="flex:2" id="btn-view-receipt" disabled>🧾 ดูใบเสร็จ</button>
-    </div>
-    <button class="btn btn-danger-outline" onclick="confirmNoAccess()">🚫 ไม่มีการใช้น้ำ</button>
+
   </div>
-</div>
 
-<!-- MODAL: RECEIPT -->
-<div class="modal-overlay" id="modal-receipt">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="modal-title">🧾 ใบเสร็จรับเงิน</div>
-      <button onclick="closeModal('modal-receipt')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
-    </div>
-    <div class="receipt-preview" id="receipt-display"></div>
-    <div class="btn-row" style="margin-bottom:9px">
-      <button class="btn btn-primary" onclick="printReceipt()" style="flex:1">🖨️ พิมพ์</button>
-      <button class="btn btn-success" onclick="saveToSheetAndDrive()" style="flex:1" id="btn-save">💾 บันทึก</button>
-    </div>
-    <div class="btn-row" style="margin-bottom:9px">
-      <button class="btn btn-outline" onclick="saveReceiptImage()" style="flex:1" id="btn-img">📸 บันทึกรูป Drive</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-receipt')" style="flex:1">← กลับ</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: ADD HOUSE -->
-<div class="modal-overlay" id="modal-add-house">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🏠 เพิ่มบ้านใหม่</div>
-    <div class="modal-subtitle">กรอกข้อมูล แล้วกด "เพิ่มบ้าน"</div>
-    <div class="settings-row"><div class="settings-label">👤 ชื่อ-นามสกุลเจ้าของ</div><input type="text" id="new-owner" class="settings-input" placeholder="นาย/นาง..." /></div>
-    <div class="settings-row"><div class="settings-label">🏠 บ้านเลขที่</div><input type="text" id="new-address" class="settings-input" placeholder="เช่น 12/3 หมู่ 5" /></div>
-    <div class="settings-row"><div class="settings-label">💧 บ่อประปา</div><select id="new-well" class="settings-input"></select></div>
-    <div class="settings-row">
-      <div class="settings-label">📟 มิเตอร์แรกเข้า <span style="font-size:11px;color:var(--text-muted)">(กรอกครั้งเดียว ไม่เปลี่ยน)</span></div>
-      <input type="number" id="new-initial" class="settings-input" value="0" inputmode="numeric" />
-    </div>
-    <div class="settings-row"><div class="settings-label">📝 หมายเหตุ <span style="font-size:11px;color:var(--text-muted)">(ไม่บังคับ)</span></div><input type="text" id="new-note" class="settings-input" placeholder="เช่น ย้ายเข้า พ.ค. 2566" /></div>
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn btn-outline" onclick="closeModal('modal-add-house')" style="flex:1">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="addHouse()" style="flex:2">➕ เพิ่มบ้าน</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: ADD EXPENSE -->
-<div class="modal-overlay" id="modal-add-expense">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="modal-title">🔧 บันทึกค่าใช้จ่าย</div>
-      <button onclick="closeModal('modal-add-expense')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
-    </div>
-    <div class="modal-subtitle">ค่าซ่อม ค่าบำรุง หรือค่าใช้จ่ายอื่นๆ</div>
-
-    <div class="settings-row">
-      <div class="settings-label">📂 ประเภท</div>
-      <select id="exp-category" class="settings-input">
-        <option value="ค่าซ่อม">🔨 ค่าซ่อม</option>
-        <option value="ค่าบำรุง">🛠 ค่าบำรุงรักษา</option>
-        <option value="ค่าไฟฟ้า">⚡ ค่าไฟฟ้า</option>
-        <option value="ค่าวัสดุ">📦 ค่าวัสดุ/อุปกรณ์</option>
-        <option value="ค่าแรง">👷 ค่าแรง</option>
-        <option value="อื่นๆ">📝 อื่นๆ</option>
-      </select>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label">📝 รายละเอียด</div>
-      <input type="text" id="exp-desc" class="settings-input" placeholder="เช่น เปลี่ยนปั๊มน้ำบ่อที่ 2" />
-    </div>
-    <div class="settings-row">
-      <div class="settings-label">💰 จำนวนเงิน (บาท)</div>
-      <input type="number" id="exp-amount" class="settings-input" placeholder="0" inputmode="numeric" />
-    </div>
-    <div class="settings-row">
-      <div class="settings-label">💧 บ่อประปา (ถ้ามี)</div>
-      <select id="exp-well" class="settings-input">
-        <option value="">— ไม่ระบุบ่อ —</option>
-      </select>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label">📅 วันที่</div>
-      <input type="date" id="exp-date" class="settings-input" />
-    </div>
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn btn-outline" onclick="closeModal('modal-add-expense')" style="flex:1">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveExpense()" style="flex:2">💾 บันทึก</button>
-    </div>
-  </div>
-</div>
-
-<!-- PRINT AREA -->
-<div id="print-area"></div>
-<div id="qr-tmp" style="position:absolute;visibility:hidden;top:-9999px"></div>
-
-<!-- LOADING / TOAST -->
-<div class="loading-overlay" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">กำลังโหลด...</div></div>
-<div class="toast" id="toast"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-// ════════════════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════════════════
-const WELL_COLORS = ['#1565C0','#00897B','#E64A19','#7B1FA2','#F57F17','#1B5E20','#880E4F','#4A148C'];
-
-// ── ค่าที่ฝังไว้ในระบบ (แก้ที่นี่ได้ถ้าย้ายชีต/โฟลเดอร์) ──
-const SHEET_ID  = '1J3tvkOGpemffWtKQe2NjyJTnhqSrO36AY11enuIHzE4';
-const FOLDER_ID = '1Mjn5p8U7muKhdm2EIqk42x0J6RRQaeON';
-
-const state = {
-  houses: [], bills: [], expenses: [],
-  wells: [
-    { id:'W1', name:'บ่อที่ 1', color:'#1565C0' },
-    { id:'W2', name:'บ่อที่ 2', color:'#00897B' },
-    { id:'W3', name:'บ่อที่ 3', color:'#E64A19' },
-  ],
-  settings: {
-    villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8, minCharge:30, minUnits:10,
-    scriptUrl:'', folderId:FOLDER_ID, sheetId:SHEET_ID, promptpayId:'',
-    paperSize:'80mm'
-  },
-  selectedHouse: null, readingData: null, selectedWellId: null,
-  currentMonth:'', selectedMonth:'', wellFilter:'all',
-  demoMode: false, currentReceipt: null
-};
-const STORAGE_KEY = 'pwa_prapa_chukwa_v2';
-
-// ════════════════════════════════════════════════════════════
-//  UI UTILITIES (navigation / modals / toast / loading)
-// ════════════════════════════════════════════════════════════
-function switchView(name) {
-  // ซ่อนทุก view แล้วแสดงอันที่เลือก
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const view = document.getElementById('view-' + name);
-  if (view) view.classList.add('active');
-
-  // อัปเดตปุ่มแถบล่าง
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const navBtn = document.getElementById('nav-' + name);
-  if (navBtn) navBtn.classList.add('active');
-
-  // ปุ่ม + ลอย แสดงเฉพาะหน้า "บ้าน"
-  const fab = document.getElementById('fab-add');
-  if (fab) fab.style.display = (name === 'home') ? 'flex' : 'none';
-
-  // เลื่อนขึ้นบนสุดทุกครั้งที่เปลี่ยนหน้า
-  const main = document.querySelector('.main');
-  if (main) main.scrollTop = 0;
-
-  // รีเฟรชเนื้อหาตามหน้า
-  if (name === 'dashboard') renderDashboard();
-  if (name === 'home')      renderHouses(document.getElementById('search-input')?.value || '');
-  if (name === 'history')   { renderBills(); if (typeof renderExpenseList === 'function') renderExpenseList(); }
-  if (name === 'settings')  { populateSettings(); renderWellEditor(); }
-}
-
-function openModal(id) {
-  const m = document.getElementById(id);
-  if (m) m.classList.add('active');
-}
-function closeModal(id) {
-  const m = document.getElementById(id);
-  if (m) m.classList.remove('active');
-}
-
-let _toastTimer = null;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
-}
-
-function showLoading(text) {
-  const o = document.getElementById('loading');
-  const t = document.getElementById('loading-text');
-  if (t && text) t.textContent = text;
-  if (o) o.classList.add('active');
-}
-function hideLoading() {
-  const o = document.getElementById('loading');
-  if (o) o.classList.remove('active');
-}
-
-// ปิด modal เมื่อแตะพื้นหลังสีดำ
-document.addEventListener('click', e => {
-  if (e.target.classList && e.target.classList.contains('modal-overlay')) {
-    e.target.classList.remove('active');
-  }
-});
-
-
-// ════════════════════════════════════════════════════════════
-//  PROMPTPAY QR — EMV QR Code (PromptPay Thailand)
-// ════════════════════════════════════════════════════════════
-function crc16(str) {
-  let crc = 0xFFFF;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-      crc &= 0xFFFF;
-    }
-  }
-  return crc;
-}
-
-function buildPromptPayPayload(idOrPhone) {
-  const digits = idOrPhone.replace(/[^0-9]/g, '');
-  let id = digits;
-  // Phone: 10 digits starting with 0 → convert to 0066XXXXXXXXX (13 chars)
-  if (digits.length === 10 && digits.startsWith('0')) {
-    id = '0066' + digits.slice(1);
-  } else if (digits.length === 13) {
-    // National ID — use as-is
-  } else {
-    return null; // invalid
-  }
-  function tlv(tag, val) {
-    return tag + String(val.length).padStart(2, '0') + val;
-  }
-  const aid  = tlv('00', 'A000000677010111');
-  const acct = tlv('01', id);
-  const merchantAcct = tlv('29', aid + acct);
-  const payload = '000201' + '010212' + merchantAcct + '5303764' + '5802TH' + '6304';
-  const checksum = crc16(payload).toString(16).toUpperCase().padStart(4, '0');
-  return payload + checksum;
-}
-
-/** สร้าง QR data URL จาก text (ใช้ QRCode.js จาก CDN) */
-function generateQRDataUrl(text, size) {
-  const tmp = document.getElementById('qr-tmp');
-  tmp.innerHTML = '';
-  try {
-    new QRCode(tmp, {
-      text, width: size || 200, height: size || 200,
-      colorDark: '#000000', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-    const canvas = tmp.querySelector('canvas');
-    if (canvas) return canvas.toDataURL('image/png');
-    const img = tmp.querySelector('img');
-    return img ? img.src : null;
-  } catch(e) { return null; }
-}
-
-/** สร้าง QR PromptPay พร้อม data URL, คืน null ถ้าไม่มีการตั้งค่า */
-function getPromptPayQRDataUrl(size) {
-  const pid = state.settings.promptpayId;
-  if (!pid) return null;
-  const payload = buildPromptPayPayload(pid);
-  if (!payload) return null;
-  return generateQRDataUrl(payload, size);
-}
-
-// ════════════════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  loadFromStorage();
-  setCurrentMonth();
-  if (!state.settings.scriptUrl) {
-    document.getElementById('setup-screen').style.display = 'flex';
-  } else {
-    initApp();
-  }
-});
-
-function setCurrentMonth() {
-  const now = new Date();
-  state.currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('header-month').textContent = 'รอบเดือน ' +
-    now.toLocaleDateString('th-TH', { month:'long', year:'numeric' });
-}
-
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (s.settings) Object.assign(state.settings, s.settings);
-      if (s.houses)   state.houses   = s.houses;
-      if (s.bills)    state.bills    = s.bills;
-      if (s.expenses) state.expenses = s.expenses;
-      if (s.wells && s.wells.length) state.wells = s.wells;
-    }
-  } catch(e) {}
-}
-
-function saveToStorage() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      settings: state.settings, houses: state.houses,
-      bills: state.bills, expenses: state.expenses, wells: state.wells
-    }));
-  } catch(e) {}
-}
-
-// ════════════════════════════════════════════════════════════
-//  SETUP
-// ════════════════════════════════════════════════════════════
-function finishSetup() {
-  let url = document.getElementById('setup-url').value.trim();
-  if (!url.startsWith('https://script.google.com')) { showToast('⚠️ URL ต้องขึ้นต้นด้วย https://script.google.com'); return; }
-  if (!url.includes('/exec')) { showToast('⚠️ URL ต้องลงท้ายด้วย /exec (ไม่ใช่ /dev)'); return; }
-  state.settings.scriptUrl = url;
-  state.settings.sheetId = SHEET_ID;
-  state.settings.folderId = FOLDER_ID;
-  state.demoMode = false;
-  saveToStorage();
-  document.getElementById('setup-screen').style.display = 'none';
-  initApp();
-}
-function skipSetup() {
-  state.demoMode = true;
-  state.houses = getDemoHouses();
-  state.bills  = getDemoBills();
-  rebuildWellsFromHouses();
-  document.getElementById('setup-screen').style.display = 'none';
-  initApp();
-  showToast('📱 Demo Mode');
-}
-function getDemoHouses() {
-  return [
-    {id:'H001',name:'นายสมชาย ใจดี',   address:'1/1 หมู่ 3',initialReading:1200,lastReading:1250,lastDate:'2026-04-05',wellId:'W1'},
-    {id:'H002',name:'นางสาวมาลี สุขสม', address:'1/2 หมู่ 3',initialReading: 800,lastReading: 890,lastDate:'2026-04-05',wellId:'W1'},
-    {id:'H003',name:'นายวิชัย แสงสว่าง',address:'2/1 หมู่ 3',initialReading:3000,lastReading:3410,lastDate:'2026-04-05',wellId:'W2'},
-    {id:'H004',name:'นางประนอม รักดี',  address:'3/2 หมู่ 4',initialReading: 500,lastReading: 560,lastDate:'2026-04-05',wellId:'W2'},
-    {id:'H005',name:'นายบุญมี ดีงาม',   address:'4/1 หมู่ 4',initialReading:2000,lastReading:2100,lastDate:'2026-04-05',wellId:'W3'},
-    {id:'H006',name:'นางสมศรี พรสวรรค์',address:'5/3 หมู่ 4',initialReading:1700,lastReading:1750,lastDate:'2026-04-05',wellId:'W3'},
-    {id:'H007',name:'นายอนันต์ ชัยชนะ', address:'6/1 หมู่ 5',initialReading: 400,lastReading: 420,lastDate:'2026-03-05',wellId:'W1'},
-    {id:'H008',name:'นางวิไล ศรีสุข',   address:'7/2 หมู่ 5',initialReading:2900,lastReading:2980,lastDate:'2026-03-05',wellId:'W2'},
-  ];
-}
-function getDemoBills() {
-  return [
-    {id:'B001',houseId:'H001',houseName:'นายสมชาย ใจดี',  address:'1/1 หมู่ 3',readDate:'2026-04',prevReading:1200,currentReading:1250,units:50, amount:350,wellId:'W1',savedAt:'2026-04-05'},
-    {id:'B002',houseId:'H002',houseName:'นางสาวมาลี สุขสม',address:'1/2 หมู่ 3',readDate:'2026-04',prevReading:860, currentReading:890, units:30, amount:190,wellId:'W1',savedAt:'2026-04-05'},
-    {id:'B003',houseId:'H003',houseName:'นายวิชัย แสงสว่าง',address:'2/1 หมู่ 3',readDate:'2026-04',prevReading:3360,currentReading:3410,units:50, amount:350,wellId:'W2',savedAt:'2026-04-05'},
-    {id:'B004',houseId:'H005',houseName:'นายบุญมี ดีงาม',  address:'4/1 หมู่ 4',readDate:'2026-04',prevReading:2020,currentReading:2100,units:80, amount:630,wellId:'W3',savedAt:'2026-04-05'},
-    // prev months
-    {id:'B005',houseId:'H001',houseName:'นายสมชาย ใจดี',  address:'1/1 หมู่ 3',readDate:'2026-03',prevReading:1150,currentReading:1200,units:50, amount:350,wellId:'W1',savedAt:'2026-03-05'},
-    {id:'B006',houseId:'H002',houseName:'นางสาวมาลี สุขสม',address:'1/2 หมู่ 3',readDate:'2026-03',prevReading:820, currentReading:860, units:40, amount:270,wellId:'W1',savedAt:'2026-03-05'},
-    {id:'B007',houseId:'H003',houseName:'นายวิชัย แสงสว่าง',address:'2/1 หมู่ 3',readDate:'2026-03',prevReading:3290,currentReading:3360,units:70, amount:550,wellId:'W2',savedAt:'2026-03-05'},
-    {id:'B008',houseId:'H005',houseName:'นายบุญมี ดีงาม',  address:'4/1 หมู่ 4',readDate:'2026-02',prevReading:1950,currentReading:2020,units:70, amount:550,wellId:'W3',savedAt:'2026-02-05'},
-  ];
-}
-
-// ════════════════════════════════════════════════════════════
-//  INIT APP
-// ════════════════════════════════════════════════════════════
-async function initApp() {
-  populateSettings();
-  renderWellEditor();
-  buildWellFilterChips();
-  buildMonthSelector();
-  renderWellSelectRow();
-  await refreshData();
-}
-
-async function refreshData() {
-  if (state.demoMode) { renderAll(); return; }
-  showLoading('กำลังโหลดจาก Google Sheets...');
-  try {
-    const [r1, r2] = await Promise.all([apiGet('getHouses'), apiGet('getBills')]);
-    if (r1.houses) state.houses = r1.houses;
-    if (r2.bills)  state.bills  = r2.bills;
-    rebuildWellsFromHouses(); // ← สร้าง wells จากชื่อบ่อใน Sheet อัตโนมัติ
-    buildWellFilterChips();
-    renderWellEditor();
-    saveToStorage();
-  } catch(e) { showToast('⚠️ ใช้ข้อมูลที่บันทึกไว้'); }
-  finally { hideLoading(); }
-  renderAll();
-}
-
-function renderAll() {
-  renderHouses();
-  renderBills();
-  renderDashboard();
-}
-
-// ════════════════════════════════════════════════════════════
-//  API
-// ════════════════════════════════════════════════════════════
-async function apiGet(action, params={}) {
-  const url = new URL(state.settings.scriptUrl);
-  url.searchParams.set('action', action);
-  url.searchParams.set('_t', Date.now()); // cache-bust ทุกครั้ง
-  for (const [k,v] of Object.entries(params)) url.searchParams.set(k,v);
-  const res = await fetch(url.toString(), { cache:'no-store', redirect:'follow' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-async function apiPost(data) {
-  // ส่งเป็น text/plain เพื่อเลี่ยง CORS preflight (OPTIONS) ที่ Apps Script ตอบไม่ได้
-  const res = await fetch(state.settings.scriptUrl, {
-    method:'POST',
-    redirect:'follow',
-    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-
-// ════════════════════════════════════════════════════════════
-//  BILLED MAP
-// ════════════════════════════════════════════════════════════
-function getThisMonthBilled() {
-  const map = new Map();
-  state.bills
-    .filter(b => b.readDate && b.readDate.startsWith(state.currentMonth))
-    .forEach(b => map.set(b.houseId, b.status === 'noaccess' ? 'noaccess' : 'done'));
-  return map;
-}
-
-// ════════════════════════════════════════════════════════════
-//  WELLS UI
-// ════════════════════════════════════════════════════════════
-
-/**
- * สร้าง state.wells จากชื่อบ่อที่มีอยู่ใน state.houses (column D ของ Sheet)
- * - ถ้ามีอยู่แล้ว → เก็บ color และ name เดิมไว้ (ผู้ใช้อาจแก้ไขแล้ว)
- * - ถ้าใหม่ → กำหนด color จาก WELL_COLORS อัตโนมัติ
- */
-function rebuildWellsFromHouses() {
-  // สร้างรายการบ่อจากบ้าน โดยใช้ wellId เป็นคีย์ และ wellName เป็นชื่อแสดง
-  const seen = new Map();
-  state.houses.forEach(h => {
-    if (h.wellId && String(h.wellId).trim() && !seen.has(h.wellId)) {
-      seen.set(h.wellId, h.wellName || h.wellId);
-    }
-  });
-  const ids = [...seen.keys()];
-  if (!ids.length) return;
-  state.wells = ids.map((id, i) => {
-    const existing = state.wells.find(w => w.id === id);
-    return {
-      id,
-      name:  seen.get(id) || existing?.name || id,
-      color: existing?.color || WELL_COLORS[i % WELL_COLORS.length]
+  <script>
+    // ════════════════════════════════════════════════════════════
+    //  STATE & CONFIGURATION
+    // ════════════════════════════════════════════════════════════
+    let STATE = {
+      cfgUrl: '',
+      houses: [],       // ข้อมูลดิบผู้ใช้น้ำ
+      records: [],      // ประวัติค่าน้ำรายเดือน
+      wells: [],        // รายชื่อบ่อทั้งหมด
+      rules: {},        // อัตราก้าวหน้าค่าน้ำ
+      currentWellFilter: 'ALL',
+      activeHouse: null,
+      modalStatus: 'DONE',
+      isDirty: false
     };
-  });
-}
 
-function wellById(id) { return state.wells.find(w => w.id === id); }
-function wellColor(id) { return wellById(id)?.color || '#90A4AE'; }
-function wellName(id)  { return wellById(id)?.name  || 'ไม่ระบุบ่อ'; }
+    // โทนสีมาตรฐานสำหรับแสดงชื่อบ่อประปา
+    const WELL_COLORS = ['#0D47A1', '#00897B', '#E65100', '#6A1B9A', '#D84315', '#4E342E', '#37474F'];
 
-function buildWellFilterChips() {
-  const row = document.getElementById('well-filter-row');
-  row.innerHTML = `<button class="filter-chip active" onclick="setWellFilter('all',this)">🏠 ทั้งหมด</button>` +
-    state.wells.map(w =>
-      `<button class="filter-chip" onclick="setWellFilter('${w.id}',this)" style="border-color:${w.color}20">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${w.color};margin-right:5px;vertical-align:middle"></span>${w.name}
-      </button>`
-    ).join('');
-}
+    // ════════════════════════════════════════════════════════════
+    //  INITIALIZATION
+    // ════════════════════════════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', () => {
+      // โหลดการตั้งค่า URL
+      const savedUrl = localStorage.getItem('prapa_gas_url') || '';
+      document.getElementById('cfg-url').value = savedUrl;
+      STATE.cfgUrl = savedUrl;
 
-function setWellFilter(id, el) {
-  state.wellFilter = id;
-  document.querySelectorAll('#well-filter-row .filter-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  renderHouses();
-}
+      // โหลดข้อมูลเก่าที่เคยเซฟเก็บไว้มาแสดงก่อน (เพื่อความเร็ว)
+      loadFromLocalStorage();
+      renderAll();
 
-function renderWellSelectRow() {
-  const row = document.getElementById('well-select-row');
-  if (!row) return; // element อาจถูกลบออกแล้ว
-  row.innerHTML = state.wells.map(w =>
-    `<button class="well-select-chip" data-wid="${w.id}"
-      style="border-color:${w.color}"
-      onclick="selectWell('${w.id}',this)">${w.name}</button>`
-  ).join('');
-}
-
-function selectWell(id, el) {
-  state.selectedWellId = id;
-  document.querySelectorAll('.well-select-chip').forEach(c => {
-    c.classList.remove('active');
-    c.style.background = 'white';
-    c.style.color = 'var(--text-muted)';
-  });
-  el.classList.add('active');
-  el.style.background = wellColor(id);
-  el.style.color = 'white';
-}
-
-function renderWellEditor() {
-  const el = document.getElementById('well-list-editor');
-  el.innerHTML = state.wells.map((w, i) =>
-    `<div class="well-item">
-      <div class="well-color-dot" style="background:${w.color}" onclick="cycleColor(${i})" title="เปลี่ยนสี"></div>
-      <input class="well-name-input" value="${w.name}" placeholder="ชื่อบ่อ..." oninput="state.wells[${i}].name=this.value" />
-      <button class="well-del-btn" onclick="deleteWell('${w.id}')">🗑</button>
-    </div>`
-  ).join('');
-}
-
-function cycleColor(idx) {
-  const cur = WELL_COLORS.indexOf(state.wells[idx].color);
-  state.wells[idx].color = WELL_COLORS[(cur + 1) % WELL_COLORS.length];
-  renderWellEditor();
-}
-
-function addWell() {
-  const id = 'W' + Date.now();
-  const colorIdx = state.wells.length % WELL_COLORS.length;
-  state.wells.push({ id, name:`บ่อที่ ${state.wells.length+1}`, color:WELL_COLORS[colorIdx] });
-  renderWellEditor();
-}
-
-function deleteWell(id) {
-  if (state.wells.length <= 1) { showToast('⚠️ ต้องมีอย่างน้อย 1 บ่อ'); return; }
-  if (!confirm('ลบบ่อนี้? บ้านที่ผูกอยู่จะไม่มีบ่อ')) return;
-  state.wells = state.wells.filter(w => w.id !== id);
-  renderWellEditor();
-}
-
-function saveWells() {
-  saveToStorage();
-  buildWellFilterChips();
-  renderAll();
-  const btn = document.querySelector('#view-settings .btn-primary[onclick="saveWells()"]');
-  if (btn) { const orig=btn.textContent; btn.textContent='✅ บันทึกแล้ว!'; btn.style.background='#2E7D32'; setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; }, 2000); }
-  showToast('✅ บันทึกบ่อประปาแล้ว');
-}
-
-// ════════════════════════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════════════════════════
-function renderDashboard() {
-  const ym = state.currentMonth;
-  const monthBills = state.bills.filter(b => b.readDate && b.readDate.startsWith(ym) && b.status !== 'noaccess');
-  const billedMap  = getThisMonthBilled();
-
-  // Hero stats
-  const totalAmt  = monthBills.reduce((s,b) => s + (b.amount||0), 0);
-  const doneCount = [...billedMap.values()].filter(v => v==='done').length;
-  const naCount   = [...billedMap.values()].filter(v => v==='noaccess').length;
-  const pendCount = state.houses.filter(h => !billedMap.has(h.id)).length;
-
-  document.getElementById('dash-total-amount').textContent = totalAmt.toLocaleString() + ' บาท';
-  document.getElementById('dash-total-sub').textContent =
-    `จากบ้านที่เก็บแล้ว ${doneCount} หลัง / ทั้งหมด ${state.houses.length} หลัง`;
-  document.getElementById('dash-s-done').textContent     = doneCount;
-  document.getElementById('dash-s-pending').textContent  = pendCount;
-  document.getElementById('dash-s-noaccess').textContent = naCount;
-
-  // Per-well revenue bars
-  const wellAmts = {};
-  state.wells.forEach(w => { wellAmts[w.id] = 0; });
-  monthBills.forEach(b => { if (b.wellId) wellAmts[b.wellId] = (wellAmts[b.wellId]||0) + (b.amount||0); });
-  const maxAmt = Math.max(...Object.values(wellAmts), 1);
-
-  document.getElementById('dash-well-bars').innerHTML = state.wells.map(w => {
-    const amt = wellAmts[w.id] || 0;
-    const pct = Math.round(amt / maxAmt * 100);
-    const houseCount = state.houses.filter(h => h.wellId === w.id).length;
-    return `<div class="well-bar-row">
-      <div class="well-bar-header">
-        <span class="well-bar-name"><span class="well-dot" style="background:${w.color}"></span>${w.name} <span style="font-weight:400;color:var(--text-muted)">(${houseCount} บ้าน)</span></span>
-        <span class="well-bar-amount">${amt.toLocaleString()} บ.</span>
-      </div>
-      <div class="well-bar-track"><div class="well-bar-fill" style="width:${pct}%;background:${w.color}"></div></div>
-    </div>`;
-  }).join('');
-
-  // Monthly chart (last 6 months)
-  renderMonthlyChart();
-
-  // Top / bottom
-  const sorted = [...monthBills].sort((a,b) => (b.units||0) - (a.units||0));
-  renderRankList('dash-top-users', sorted.slice(0,5), true);
-  renderRankList('dash-bot-users', sorted.slice(-5).reverse(), false);
-
-  // Expenses this month
-  const monthExp = state.expenses.filter(e => e.month && e.month.startsWith(ym));
-  const totalExp = monthExp.reduce((s,e) => s + (e.amount||0), 0);
-  const netAmt   = totalAmt - totalExp;
-
-  // Net box
-  const netBox = document.getElementById('dash-net-box');
-  if (totalExp > 0) {
-    netBox.style.display = 'flex';
-    netBox.className = 'net-box ' + (netAmt >= 0 ? 'profit' : 'loss');
-    document.getElementById('dash-net-amount').textContent = (netAmt >= 0 ? '+' : '') + netAmt.toLocaleString() + ' บาท';
-    document.getElementById('dash-net-sub').textContent =
-      `รายรับ ${totalAmt.toLocaleString()} − ค่าใช้จ่าย ${totalExp.toLocaleString()} บ.`;
-  } else {
-    netBox.style.display = 'none';
-  }
-
-  // Expense list on dashboard
-  const expTotalEl = document.getElementById('dash-expense-total');
-  const expListEl  = document.getElementById('dash-expense-list');
-  if (!monthExp.length) {
-    expTotalEl.textContent = '';
-    expListEl.innerHTML = '<div class="empty-state" style="padding:12px"><p>ยังไม่มีค่าใช้จ่ายเดือนนี้</p></div>';
-  } else {
-    expTotalEl.textContent = `รวม ${monthExp.length} รายการ · ${totalExp.toLocaleString()} บาท`;
-    expListEl.innerHTML = monthExp.map(e => {
-      const w = wellById(e.wellId);
-      return `<div class="expense-card">
-        <div class="expense-header">
-          <div>
-            <div class="expense-desc">${e.description}</div>
-            <div class="expense-cat">${e.category}${w?` · <span style="color:${w.color};font-weight:600">${w.name}</span>`:''} · ${e.date||e.month}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div class="expense-amount">${(e.amount||0).toLocaleString()} บ.</div>
-            <button class="expense-del" onclick="deleteExpense('${e.id}')">🗑</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-}
-
-function renderRankList(elId, bills, isTop) {
-  const el = document.getElementById(elId);
-  if (!bills.length) { el.innerHTML = '<div class="empty-state" style="padding:16px"><p>ยังไม่มีข้อมูล</p></div>'; return; }
-  el.innerHTML = bills.map((b, i) => {
-    const rankClass = i===0 ? 'rank-1' : i===1 ? 'rank-2' : i===2 ? 'rank-3' : 'rank-other';
-    const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1);
-    const w = wellById(b.wellId);
-    return `<div class="rank-row">
-      <div class="rank-num ${rankClass}">${medal}</div>
-      <div class="rank-info">
-        <div class="rank-name">${b.houseName}</div>
-        <div class="rank-addr">📍 ${b.address}${w ? ` · <span style="color:${w.color};font-weight:600">${w.name}</span>` : ''}</div>
-      </div>
-      <div class="rank-units">${(b.units||0).toLocaleString()} หน่วย</div>
-    </div>`;
-  }).join('');
-}
-
-function renderMonthlyChart() {
-  const wrap = document.getElementById('dash-chart-wrap');
-  const months = [];
-  const now = new Date();
-  for (let i=5; i>=0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('th-TH', { month:'short' });
-    const bills = state.bills.filter(b => b.readDate && b.readDate.startsWith(ym) && b.status !== 'noaccess');
-    const total = bills.reduce((s,b) => s+(b.amount||0), 0);
-    months.push({ ym, label, total });
-  }
-
-  const maxVal = Math.max(...months.map(m => m.total), 1);
-  const W = 340, H = 160, pad = { l:44, r:8, t:10, b:28 };
-  const bw = Math.floor((W - pad.l - pad.r) / months.length);
-  const barW = Math.floor(bw * 0.6);
-  const chartH = H - pad.t - pad.b;
-
-  let bars = '', labels = '', yLines = '';
-  // Y grid lines (4 lines)
-  for (let i=0; i<=3; i++) {
-    const y = pad.t + chartH - (i/3)*chartH;
-    const val = Math.round((i/3)*maxVal);
-    yLines += `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#E3ECF7" stroke-width="1"/>`;
-    yLines += `<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="#90A4AE">${val>=1000 ? (val/1000).toFixed(1)+'k' : val}</text>`;
-  }
-
-  months.forEach((m, i) => {
-    const x = pad.l + i*bw + (bw-barW)/2;
-    const bh = m.total > 0 ? Math.max(4, Math.round((m.total/maxVal)*chartH)) : 4;
-    const y = pad.t + chartH - bh;
-    const isThis = m.ym === state.currentMonth;
-    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${isThis ? 'var(--primary)' : '#90CAF9'}" class="chart-bar">
-      <title>${m.label}: ${m.total.toLocaleString()} บาท</title></rect>`;
-    if (m.total > 0) {
-      bars += `<text x="${x+barW/2}" y="${y-3}" text-anchor="middle" font-size="8" fill="var(--primary)" font-weight="700">${m.total>=1000?(m.total/1000).toFixed(1)+'k':m.total}</text>`;
-    }
-    labels += `<text x="${x+barW/2}" y="${H-4}" text-anchor="middle" font-size="10" fill="${isThis?'var(--primary)':'#90A4AE'}" font-weight="${isThis?'700':'400'}">${m.label}</text>`;
-  });
-
-  wrap.innerHTML = `<svg class="bar-chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${yLines}${bars}${labels}</svg>`;
-}
-
-// ════════════════════════════════════════════════════════════
-//  HOUSE LIST
-// ════════════════════════════════════════════════════════════
-function renderHouses(query='') {
-  const list = document.getElementById('house-list');
-  const billedMap = getThisMonthBilled();
-  const q = query.toLowerCase().trim();
-  let filtered = state.houses.filter(h => {
-    if (q && !h.name.toLowerCase().includes(q) && !h.address.toLowerCase().includes(q)) return false;
-    if (state.wellFilter !== 'all' && h.wellId !== state.wellFilter) return false;
-    return true;
-  });
-
-  // Stats (always all houses)
-  const all = state.houses;
-  document.getElementById('stat-total').textContent   = all.length;
-  document.getElementById('stat-done').textContent    = all.filter(h => billedMap.get(h.id)==='done').length;
-  document.getElementById('stat-pending').textContent = all.filter(h => !billedMap.has(h.id)).length;
-  document.getElementById('stat-noaccess').textContent= all.filter(h => billedMap.get(h.id)==='noaccess').length;
-  document.getElementById('house-section-title').textContent = q
-    ? `ผลการค้นหา (${filtered.length})`
-    : state.wellFilter !== 'all'
-      ? `${wellName(state.wellFilter)} (${filtered.length} บ้าน)`
-      : `รายชื่อบ้านทั้งหมด (${filtered.length})`;
-
-  if (!filtered.length) {
-    list.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><p>ไม่พบ "${query}"</p></div>`;
-    return;
-  }
-
-  // Sort: pending → noaccess → done, แล้วเรียงตามชื่อ (บ้านเลขที่ส่วนใหญ่เป็น '-')
-  const order = v => v === 'done' ? 2 : v === 'noaccess' ? 1 : 0;
-  const sortKey = h => (h.address && h.address !== '-' ? h.address : h.name) || '';
-  filtered.sort((a,b) => order(billedMap.get(a.id)) - order(billedMap.get(b.id)) || sortKey(a).localeCompare(sortKey(b),'th'));
-
-  list.innerHTML = filtered.map(h => {
-    const status = billedMap.get(h.id);
-    const w = wellById(h.wellId);
-    const initials = h.name.replace(/^(คุณ|นาย|นาง|นางสาว)\s*/,'').charAt(0) || '?';
-    const cardCls = status==='done' ? 'done-card' : status==='noaccess' ? 'noaccess-card' : '';
-    const avatarBg = status==='done' ? 'linear-gradient(135deg,#43A047 0%,#A5D6A7 100%)'
-      : status==='noaccess' ? 'linear-gradient(135deg,#90A4AE 0%,#CFD8DC 100%)'
-      : w ? `linear-gradient(135deg,${w.color} 0%,${w.color}99 100%)`
-      : 'linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%)';
-    const badge = status==='done'
-      ? `<div class="house-badge badge-done">✅ อ่านแล้ว</div>`
-      : status==='noaccess'
-        ? `<div class="house-badge badge-noaccess">🚫 ไม่ใช้น้ำ</div>`
-        : `<div class="house-badge badge-pending">⏳ ยังไม่อ่าน</div>`;
-    return `<div class="house-card ${cardCls}" onclick="openReading('${h.id}')">
-      <div class="house-avatar" style="background:${avatarBg}">${initials}</div>
-      <div class="house-info">
-        <div class="house-name">${h.name}</div>
-        ${(h.address && h.address !== '-') ? `<div class="house-meta">📍 ${h.address}</div>` : ''}
-        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          ${w ? `<span class="house-well-tag" style="background:${w.color}18;color:${w.color}">💧 ${w.name}</span>` : ''}
-          <span style="font-size:11px;color:var(--text-muted)">มิเตอร์ล่าสุด: ${h.lastReading||0}</span>
-        </div>
-      </div>
-      ${badge}
-    </div>`;
-  }).join('');
-}
-
-function filterHouses() {
-  const q = document.getElementById('search-input').value;
-  document.getElementById('search-clear').style.display = q ? 'block' : 'none';
-  renderHouses(q);
-}
-function clearSearch() {
-  document.getElementById('search-input').value = '';
-  document.getElementById('search-clear').style.display = 'none';
-  renderHouses('');
-}
-
-// ════════════════════════════════════════════════════════════
-//  METER READING
-// ════════════════════════════════════════════════════════════
-function formatLastDate(d) {
-  if (!d || d === '-') return '-';
-  // YYYY-MM-DD → Thai locale with day
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-    try {
-      return new Date(d + 'T00:00:00').toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
-    } catch(e) { return d; }
-  }
-  // YYYY-MM → month only
-  if (/^\d{4}-\d{2}$/.test(d)) {
-    const [y,m] = d.split('-');
-    try {
-      return new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('th-TH', {month:'short',year:'numeric'});
-    } catch(e) { return d; }
-  }
-  return d;
-}
-
-function openReading(houseId) {
-  const house = state.houses.find(h => h.id === houseId);
-  if (!house) return;
-  state.selectedHouse = house;
-  state.selectedWellId = house.wellId || state.wells[0]?.id;
-  state.readingData = null;
-
-  document.getElementById('reading-house-name').textContent =
-    (house.address && house.address !== '-') ? ('บ้าน ' + house.address) : house.name;
-  document.getElementById('reading-owner-name').textContent = house.name;
-  document.getElementById('reading-prev').textContent = house.lastReading || 0;
-  document.getElementById('reading-last-date').textContent = formatLastDate(house.lastDate);
-  document.getElementById('current-reading-input').value = '';
-  document.getElementById('calc-box').classList.remove('visible');
-  document.getElementById('btn-view-receipt').disabled = true;
-
-  // แสดงชื่อบ่อ (static — ไม่ให้เลือก)
-  const w = wellById(state.selectedWellId);
-  const badge = document.getElementById('reading-well-badge');
-  if (badge && w) {
-    badge.textContent = w.name;
-    badge.style.background = w.color;
-  } else if (badge) {
-    badge.textContent = '-';
-    badge.style.background = 'var(--primary)';
-  }
-
-  openModal('modal-reading');
-  setTimeout(() => document.getElementById('current-reading-input').focus(), 400);
-}
-
-function onReadingChange() {
-  const cur  = parseInt(document.getElementById('current-reading-input').value) || 0;
-  const prev = state.selectedHouse?.lastReading || 0;
-  const s    = state.settings;
-
-  if (cur <= prev) {
-    document.getElementById('calc-box').classList.remove('visible');
-    document.getElementById('btn-view-receipt').disabled = true;
-    if (cur > 0 && cur < prev) showToast('⚠️ มิเตอร์ใหม่ต้องมากกว่ามิเตอร์เดิม');
-    return;
-  }
-  const units = cur - prev;
-  const rawCost   = units * s.unitPrice;
-  const total     = Math.max(s.minCharge, rawCost);
-  const waterCost = rawCost;
-  // serviceFee ใช้แสดงเฉพาะตอนใช้น้ำน้อยกว่าขั้นต่ำ
-  const isMin     = rawCost < s.minCharge;
-
-  document.getElementById('calc-units').textContent = units.toLocaleString() + ' หน่วย';
-  document.getElementById('calc-rate-label').textContent = `ค่าน้ำ (หน่วยละ ${s.unitPrice} บ.)`;
-  document.getElementById('calc-water').textContent = rawCost.toLocaleString() + ' บาท';
-  const svcEl = document.getElementById('calc-service');
-  const svcRow = svcEl.closest('.calc-row');
-  if (isMin) {
-    svcEl.closest('.calc-row').querySelector('span:first-child').textContent = 'ค่าขั้นต่ำ';
-    svcEl.textContent = s.minCharge.toLocaleString() + ' บาท';
-    if (svcRow) svcRow.style.display = '';
-  } else {
-    if (svcRow) svcRow.style.display = 'none';
-  }
-  document.getElementById('calc-total').textContent = total.toLocaleString() + ' บาท';
-  document.getElementById('calc-box').classList.add('visible');
-  document.getElementById('btn-view-receipt').disabled = false;
-  state.readingData = { units, waterCost, serviceFee: isMin ? s.minCharge : 0, total, currentReading:cur };
-}
-
-// ════════════════════════════════════════════════════════════
-//  RECEIPT
-// ════════════════════════════════════════════════════════════
-function openReceipt() {
-  if (!state.readingData) return;
-  closeModal('modal-reading');
-  const h=state.selectedHouse, d=state.readingData, s=state.settings;
-  const now=new Date();
-  const dateStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'});
-  const monthStr= now.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
-  const billNo  = 'B'+Date.now().toString().slice(-6);
-  const w = wellById(state.selectedWellId);
-
-  document.getElementById('receipt-display').innerHTML = `
-    <div class="receipt-title">${s.villageName}</div>
-    <div style="text-align:center;font-size:11px;margin-bottom:5px">ใบเสร็จรับเงินค่าน้ำประปา</div>
-    <hr class="receipt-divider"/>
-    <div class="receipt-row"><span>เลขที่</span><span style="font-weight:700">${billNo}</span></div>
-    <div class="receipt-row"><span>วันที่</span><span>${dateStr}</span></div>
-    <div class="receipt-row"><span>รอบ</span><span>${monthStr}</span></div>
-    ${w ? `<div class="receipt-row"><span>บ่อประปา</span><span style="font-weight:700;color:${w.color}">${w.name}</span></div>` : ''}
-    <hr class="receipt-divider"/>
-    <div class="receipt-row"><span>บ้านเลขที่</span><span style="font-weight:700">${h.address}</span></div>
-    <div class="receipt-row"><span>ชื่อ</span><span>${h.name}</span></div>
-    <hr class="receipt-divider"/>
-    <div class="receipt-row"><span>อ่านครั้งก่อน</span><span>${h.lastReading||0}</span></div>
-    <div class="receipt-row"><span>อ่านครั้งนี้</span><span>${d.currentReading}</span></div>
-    <div class="receipt-row" style="font-weight:700"><span>หน่วยที่ใช้</span><span>${d.units} หน่วย</span></div>
-    <hr class="receipt-divider"/>
-    ${d.waterCost>0?`<div class="receipt-row"><span>ค่าน้ำ</span><span>${d.waterCost.toLocaleString()} บ.</span></div>`:''}
-    <div class="receipt-row"><span>ค่าบริการ</span><span>${d.serviceFee.toLocaleString()} บ.</span></div>
-    <hr class="receipt-divider"/>
-    <div class="receipt-total-row"><span>รวมทั้งสิ้น</span><span></span></div>
-    <div class="receipt-big">${d.total.toLocaleString()} บาท</div>
-    <hr class="receipt-divider"/>
-    <div style="text-align:center;font-size:11px;color:#777;margin-top:7px">ขอบคุณที่ชำระเงิน 🙏</div>
-    ${s.promptpayId ? `<div class="receipt-qr-wrap">
-      <div style="font-size:9px;color:#555;margin-bottom:3px">📲 สแกนจ่าย PromptPay</div>
-      <div id="receipt-qr-img"></div>
-      <div style="font-size:8px;color:#aaa;margin-top:2px">${s.promptpayId}</div>
-    </div>` : ''}`;
-
-  state.currentReceipt = { billNo, dateStr, monthStr, h, d, s, w };
-  document.getElementById('btn-save').disabled = false;
-  document.getElementById('btn-save').textContent = '💾 บันทึก';
-  openModal('modal-receipt');
-
-  // Render PromptPay QR หลัง modal เปิดแล้ว
-  if (s.promptpayId && typeof QRCode !== 'undefined') {
-    try {
-      const qrBox = document.getElementById('receipt-qr-img');
-      if (qrBox) {
-        const payload = buildPromptPayPayload(s.promptpayId);
-        if (payload) {
-          new QRCode(qrBox, {
-            text: payload, width: 150, height: 150,
-            colorDark: '#000000', colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-          });
-        }
+      // ดึงข้อมูลสดใหม่จากเซิร์ฟเวอร์ทันที
+      if (STATE.cfgUrl) {
+        syncData();
+      } else {
+        switchView('settings', document.querySelectorAll('.nav-btn')[3]);
+        showToast('⚠️ กรุณาตั้งค่า URL สำหรับเชื่อมต่อข้อมูลก่อนครับ');
       }
-    } catch(e) { console.warn('QR render:', e); }
-  }
-}
 
-function printReceipt() {
-  const r=state.currentReceipt; if (!r) return;
-  const {billNo,dateStr,monthStr,h,d,s,w}=r;
-  document.getElementById('print-area').innerHTML = `
-    <div class="p-title">${s.villageName}</div>
-    <div class="p-center" style="font-size:8pt">ใบเสร็จรับเงินค่าน้ำประปา</div>
-    <hr class="p-divider"/>
-    <div class="p-row"><span>เลขที่</span><span>${billNo}</span></div>
-    <div class="p-row"><span>วันที่</span><span>${dateStr}</span></div>
-    <div class="p-row"><span>รอบ</span><span>${monthStr}</span></div>
-    ${w?`<div class="p-row"><span>บ่อ</span><span>${w.name}</span></div>`:''}
-    <hr class="p-divider"/>
-    <div class="p-row"><span>บ้าน</span><span>${h.address}</span></div>
-    <div class="p-row"><span>ชื่อ</span><span>${h.name}</span></div>
-    <hr class="p-divider"/>
-    <div class="p-row"><span>อ่านครั้งก่อน</span><span>${h.lastReading||0}</span></div>
-    <div class="p-row"><span>อ่านครั้งนี้</span><span>${d.currentReading}</span></div>
-    <div class="p-row" style="font-weight:bold"><span>ใช้ไป</span><span>${d.units} หน่วย</span></div>
-    <hr class="p-divider"/>
-    ${d.waterCost>0?`<div class="p-row"><span>ค่าน้ำ</span><span>${d.waterCost} บ.</span></div>`:''}
-    <div class="p-row"><span>ค่าบริการ</span><span>${d.serviceFee} บ.</span></div>
-    <hr class="p-divider"/>
-    <div class="p-big">${d.total.toLocaleString()} บาท</div>
-    <hr class="p-divider"/>
-    ${s.promptpayId ? `<div class="p-center" style="font-size:7pt;margin-bottom:1mm">สแกน PromptPay จ่ายได้เลย</div>
-    <div class="p-center" id="print-qr-box"></div>
-    <div class="p-center" style="font-size:7pt;margin-top:1mm">${s.promptpayId}</div>
-    <hr class="p-divider"/>` : ''}
-    <div class="p-center" style="font-size:8pt">ขอบคุณครับ/ค่ะ</div>`;
-
-  // Render QR สำหรับพิมพ์ (ต้องทำก่อน print)
-  if (s.promptpayId && typeof QRCode !== 'undefined') {
-    try {
-      const qrBox = document.getElementById('print-qr-box');
-      if (qrBox) {
-        const payload = buildPromptPayPayload(s.promptpayId);
-        if (payload) {
-          const qrDataUrl = generateQRDataUrl(payload, 200);
-          if (qrDataUrl) {
-            const img = document.createElement('img');
-            img.src = qrDataUrl;
-            img.style.cssText = 'width:36mm;height:36mm;display:block;margin:1mm auto';
-            qrBox.appendChild(img);
-          }
-        }
-      }
-    } catch(e) { console.warn('QR print:', e); }
-  }
-  // กำหนดขนาดกระดาษตามการตั้งค่า
-  applyPaperSize(state.settings.paperSize || '58mm');
-
-  window.print();
-}
-
-function applyPaperSize(size) {
-  let styleEl = document.getElementById('dynamic-print-style');
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = 'dynamic-print-style';
-    document.head.appendChild(styleEl);
-  }
-  if (size === 'A4') {
-    styleEl.textContent = `@media print { @page { size:A4; margin:12mm; } #print-area { width:120mm; font-size:11pt; } #print-area .p-title{font-size:14pt} #print-area .p-big{font-size:18pt} #print-area .p-row{font-size:11pt} #print-area img{width:42mm!important;height:42mm!important} }`;
-  } else if (size === '80mm') {
-    styleEl.textContent = `@media print { @page { size:80mm auto; margin:3mm; } #print-area { width:74mm; font-size:10pt; } #print-area .p-title{font-size:11pt} #print-area .p-big{font-size:15pt} #print-area .p-row{font-size:9.5pt} #print-area img{width:48mm!important;height:48mm!important} }`;
-  } else {
-    styleEl.textContent = `@media print { @page { size:58mm auto; margin:2mm; } #print-area { width:54mm; font-size:8.5pt; } #print-area img{width:36mm!important;height:36mm!important} }`;
-  }
-}
-
-async function saveReceiptImage() {
-  const btn = document.getElementById('btn-img');
-  const el  = document.getElementById('receipt-display');
-  if (!el || !window.html2canvas) { showToast('⏳ กรุณารอสักครู่แล้วลองใหม่'); return; }
-  btn.disabled = true; btn.textContent = '⏳ กำลังสร้างรูป...';
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 2.5, useCORS: true, backgroundColor: '#ffffff',
-      logging: false, allowTaint: true
+      setupPullToRefresh();
     });
-    const r = state.currentReceipt;
-    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`
-                    .replace(/\s/g,'_').replace(/\//g,'-');
 
-    if (!state.demoMode && state.settings.scriptUrl) {
-      // ─── บันทึกลง Google Drive ───
-      btn.textContent = '☁️ กำลังอัปโหลด Drive...';
-      const base64 = canvas.toDataURL('image/png').split(',')[1];
+    function loadFromLocalStorage() {
       try {
-        const res = await apiPost({
-          action: 'uploadReceipt',
-          image: base64,
-          fileName: fname,
-          folderId: state.settings.folderId || FOLDER_ID
-        });
-        if (res.fileUrl) {
-          showToast('✅ บันทึกลง Google Drive แล้ว');
-          if (confirm('✅ บันทึกรูปลง Google Drive แล้ว!\nต้องการเปิดดูใน Drive ไหมครับ?')) {
-            window.open(res.fileUrl, '_blank');
-          }
-        } else {
-          showToast('⚠️ Drive ตอบกลับผิดพลาด — ดาวน์โหลดแทน');
-          canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
-        }
-      } catch(e) {
-        showToast('⚠️ อัปโหลดไม่สำเร็จ — ดาวน์โหลดแทน');
-        canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
-      }
-    } else {
-      // ─── Demo / ยังไม่ตั้งค่า → ดาวน์โหลด ───
-      canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
+        STATE.houses = JSON.parse(localStorage.getItem('prapa_cache_houses')) || [];
+        STATE.records = JSON.parse(localStorage.getItem('prapa_cache_records')) || [];
+        STATE.wells = JSON.parse(localStorage.getItem('prapa_cache_wells')) || [];
+        STATE.rules = JSON.parse(localStorage.getItem('prapa_cache_rules')) || {};
+      } catch(e) { console.error(e); }
     }
-  } catch(e) {
-    showToast('⚠️ ไม่สามารถสร้างรูปได้');
-  } finally {
-    btn.disabled = false; btn.textContent = '📸 บันทึกรูป Drive';
-  }
-}
-function fallbackDownload(blob, fname) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = fname;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('✅ ดาวน์โหลดรูปแล้ว');
-}
 
-// อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติแบบเงียบ (ไม่รบกวนผู้ใช้)
-async function autoUploadReceiptImage() {
-  const el = document.getElementById('receipt-display');
-  if (!el || !window.html2canvas || state.demoMode || !state.settings.scriptUrl) return;
-  try {
-    const canvas = await html2canvas(el, { scale:2.5, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
-    const r = state.currentReceipt;
-    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
-    const base64 = canvas.toDataURL('image/png').split(',')[1];
-    await apiPost({ action:'uploadReceipt', image:base64, fileName:fname, folderId:state.settings.folderId||FOLDER_ID });
-  } catch(e) { /* เงียบ — ผู้ใช้ยังกดปุ่มบันทึกรูปเองได้ */ }
-}
+    function saveToLocalStorage() {
+      localStorage.setItem('prapa_cache_houses', JSON.stringify(STATE.houses));
+      localStorage.setItem('prapa_cache_records', JSON.stringify(STATE.records));
+      localStorage.setItem('prapa_cache_wells', JSON.stringify(STATE.wells));
+      localStorage.setItem('prapa_cache_rules', JSON.stringify(STATE.rules));
+    }
 
-async function saveToSheetAndDrive() {
-  const r=state.currentReceipt; if (!r) return;
-  const {h,d,s,billNo,w}=r;
-  const btn=document.getElementById('btn-save');
-  btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...';
+    function saveConfig() {
+      const val = document.getElementById('cfg-url').value.trim();
+      localStorage.setItem('prapa_gas_url', val);
+      STATE.cfgUrl = val;
+      showToast('⚙️ บันทึก URL เรียบร้อย');
+      syncData();
+    }
 
-  const ym=state.currentMonth;
-  const record={
-    id:billNo, houseId:h.id, houseName:h.name, address:h.address,
-    readDate:ym, prevReading:h.lastReading||0, currentReading:d.currentReading,
-    units:d.units, unitPrice:s.unitPrice, amount:d.total,
-    wellId:state.selectedWellId||'', savedAt:new Date().toISOString().split('T')[0]
-  };
+    function clearLocalCache() {
+      localStorage.removeItem('prapa_cache_houses');
+      localStorage.removeItem('prapa_cache_records');
+      localStorage.removeItem('prapa_cache_wells');
+      localStorage.removeItem('prapa_cache_rules');
+      loadFromLocalStorage();
+      renderAll();
+      showToast('🧹 ล้างข้อมูลขยะเรียบร้อย');
+    }
 
-  state.bills.unshift(record);
-  const hi=state.houses.findIndex(hh=>hh.id===h.id);
-  if (hi>=0) { state.houses[hi].lastReading=d.currentReading; state.houses[hi].lastDate=new Date().toISOString().split('T')[0]; state.houses[hi].wellId=state.selectedWellId||state.houses[hi].wellId; }
-  saveToStorage(); renderAll();
+    // ════════════════════════════════════════════════════════════
+    //  NETWORKING (ดึงข้อมูล/ส่งข้อมูลกลับ)
+    // ════════════════════════════════════════════════════════════
+    async function syncData() {
+      if (!STATE.cfgUrl) { showToast('❌ ยังไม่ได้ตั้งค่า URL'); return; }
+      const btn = document.getElementById('btn-sync');
+      btn.style.pointerEvents = 'none';
+      btn.textContent = '⏳';
+      
+      showToast('🔄 กำลังอัปเดตข้อมูลล่าสุด...');
+      showShimmerLoaders();
 
-  if (state.demoMode) {
-    showToast('✅ บันทึกแล้ว (Demo)'); btn.textContent='✅ บันทึกแล้ว';
-    setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 700);
-    return;
-  }
-  try {
-    showLoading('บันทึกลง Google Sheets...');
-    await apiPost({ action:'saveReading', ...record });
-    showToast('✅ บันทึกลง Sheets เรียบร้อย!');
-    btn.textContent='✅ บันทึกแล้ว';
-    autoUploadReceiptImage(); // อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติ (เบื้องหลัง)
-    setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 800);
-  } catch(e) {
-    showToast('⚠️ บันทึกในเครื่องแล้ว (Sheets อาจยังไม่ได้รับ)');
-    btn.disabled=false; btn.textContent='🔄 ลองอีกครั้ง';
-  } finally { hideLoading(); }
-}
-
-// ════════════════════════════════════════════════════════════
-//  NO ACCESS
-// ════════════════════════════════════════════════════════════
-function confirmNoAccess() {
-  const h=state.selectedHouse; if (!h) return;
-  if (confirm(`ยืนยัน: บ้าน ${h.address} (${h.name})\nไม่มีการใช้น้ำเดือนนี้ ไม่มีการคิดค่าน้ำ`)) markNoAccess();
-}
-async function markNoAccess() {
-  const h=state.selectedHouse; if (!h) return;
-  closeModal('modal-reading');
-  const now=new Date();
-  const ym=state.currentMonth;
-  const record={
-    id:'BNA'+Date.now().toString().slice(-6), houseId:h.id, houseName:h.name, address:h.address,
-    readDate:ym, prevReading:h.lastReading||0, currentReading:h.lastReading||0,
-    units:0, unitPrice:0, amount:0, status:'noaccess',
-    wellId:h.wellId||'', savedAt:now.toISOString().split('T')[0]
-  };
-  state.bills.unshift(record);
-  saveToStorage(); renderAll();
-  showToast('🚫 บันทึกแล้ว: ไม่มีการใช้น้ำเดือนนี้');
-  if (!state.demoMode && state.settings.scriptUrl) {
-    try { await apiPost({ action:'saveReading', ...record }); } catch(e) {}
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-//  ADD HOUSE
-// ════════════════════════════════════════════════════════════
-function openAddHouseModal() {
-  document.getElementById('new-owner').value='';
-  document.getElementById('new-address').value='';
-  document.getElementById('new-initial').value='0';
-  document.getElementById('new-note').value='';
-  const sel=document.getElementById('new-well');
-  sel.innerHTML=state.wells.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
-  openModal('modal-add-house');
-}
-async function addHouse() {
-  const name    = document.getElementById('new-owner').value.trim();
-  const address = document.getElementById('new-address').value.trim() || '-';
-  const wellId  = document.getElementById('new-well').value;
-  const wellName = wellById(wellId)?.name || '';
-  const initial = parseInt(document.getElementById('new-initial').value) || 0;
-  const note    = document.getElementById('new-note').value.trim();
-  if (!name) { showToast('⚠️ กรอกชื่อลูกบ้านด้วยครับ'); return; }
-  const newHouse = { id:'H'+Date.now(), name, address, initialReading:initial, lastReading:initial, lastDate:'', wellId, wellName, note };
-  state.houses.push(newHouse);
-  saveToStorage(); renderAll(); closeModal('modal-add-house');
-  if (!state.demoMode && state.settings.scriptUrl) {
-    try { await apiPost({ action:'addHouse', name, address, initialReading:initial, wellId, wellName, note }); showToast('✅ เพิ่มบ้านสำเร็จ!'); }
-    catch(e) { showToast('✅ เพิ่มในเครื่องแล้ว'); }
-  } else { showToast('✅ เพิ่มบ้านสำเร็จ'); }
-}
-
-// ════════════════════════════════════════════════════════════
-//  HISTORY
-// ════════════════════════════════════════════════════════════
-function buildMonthSelector() {
-  const sel=document.getElementById('month-selector');
-  const now=new Date();
-  const months=[];
-  for (let i=0;i<6;i++) {
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    const ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label=d.toLocaleDateString('th-TH',{month:'short',year:'numeric'});
-    months.push({ym,label});
-  }
-  sel.innerHTML=months.map((m,i)=>
-    `<div class="month-chip ${i===0?'active':''}" onclick="selectMonth('${m.ym}',this)">${m.label}</div>`
-  ).join('');
-  state.selectedMonth=months[0].ym;
-}
-function selectMonth(ym,el) {
-  document.querySelectorAll('.month-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  state.selectedMonth=ym;
-  renderBills();
-  renderExpenseList();
-}
-function renderBills() {
-  const list=document.getElementById('bill-list');
-  const bills=state.bills.filter(b=>b.readDate&&b.readDate.startsWith(state.selectedMonth));
-  if (!bills.length) { list.innerHTML=`<div class="empty-state"><div class="emoji">📭</div><p>ยังไม่มีข้อมูลเดือนนี้</p></div>`; return; }
-  list.innerHTML=bills.map(b=>{
-    const isNA=b.status==='noaccess';
-    const w=wellById(b.wellId);
-    return `<div class="bill-card" style="${isNA?'border-left-color:#90A4AE;opacity:.75':''}">
-      <div class="bill-header">
-        <div>
-          <div class="bill-house">${b.houseName}</div>
-          <div style="font-size:11px;color:var(--text-muted)">📍 ${b.address}${w?` · <span style="color:${w.color};font-weight:600">${w.name}</span>`:''}</div>
-        </div>
-        <div class="bill-amount" style="${isNA?'color:#90A4AE;font-size:13px':''}">
-          ${isNA?'🚫 ไม่มีการใช้น้ำ':(b.amount||0).toLocaleString()+' บ.'}
-        </div>
-      </div>
-      <div class="bill-details">
-        ${isNA
-          ?`<div class="bill-detail">ไม่มีการคิดค่าน้ำ</div>`
-          :`<div class="bill-detail">มิเตอร์: <span>${b.prevReading}→${b.currentReading}</span></div>
-            <div class="bill-detail">ใช้: <span>${b.units} หน่วย</span></div>`
+      try {
+        const res = await fetch(`${STATE.cfgUrl}?action=init`);
+        const d = await res.json();
+        if (d && d.ok) {
+          STATE.houses = d.houses || [];
+          STATE.records = d.records || [];
+          STATE.wells = d.wells || [];
+          STATE.rules = d.rules || {};
+          saveToLocalStorage();
+          renderAll();
+          showToast('✅ อัปเดตข้อมูลเป็นปัจจุบันแล้ว');
+        } else {
+          showToast('❌ ข้อมูลผิดพลาด: ' + (d.msg || ''));
         }
-        <div class="bill-detail">วันที่: <span>${b.savedAt||b.readDate}</span></div>
-      </div>
-    </div>`;
-  }).join('');
-}
+      } catch(err) {
+        console.error(err);
+        showToast('📶 เชื่อมต่อล้มเหลว (กำลังใช้ข้อมูลในเครื่อง)');
+      } finally {
+        btn.style.pointerEvents = 'auto';
+        btn.textContent = '🔄';
+        hideShimmerLoaders();
+      }
+    }
 
-// ════════════════════════════════════════════════════════════
-//  SETTINGS
-// ════════════════════════════════════════════════════════════
-function populateSettings() {
-  const s=state.settings;
-  document.getElementById('cfg-url').value=s.scriptUrl||'';
-  document.getElementById('cfg-village').value=s.villageName;
-  document.getElementById('cfg-unit-price').value=s.unitPrice;
-  document.getElementById('cfg-min-charge').value=s.minCharge;
-  document.getElementById('cfg-min-units').value=s.minUnits;
-  document.getElementById('cfg-folder-id').value=s.folderId||'';
-  document.getElementById('cfg-promptpay').value=s.promptpayId||'';
-  const paperSel = document.getElementById('cfg-paper');
-  if (paperSel) paperSel.value = s.paperSize || '58mm';
-  refreshPromptPayPreview();
-  // Live preview เมื่อพิมพ์
-  document.getElementById('cfg-promptpay').addEventListener('input', refreshPromptPayPreview);
-}
+    function showShimmerLoaders() {
+      document.getElementById('house-list-container').innerHTML = 
+        `<div class="house-card shimmer" style="height:90px; border:none;"></div>` +
+        `<div class="house-card shimmer" style="height:90px; border:none;"></div>` +
+        `<div class="house-card shimmer" style="height:90px; border:none;"></div>`;
+    }
+    function hideShimmerLoaders() {}
 
-function refreshPromptPayPreview() {
-  const box = document.getElementById('cfg-promptpay-preview');
-  const val = document.getElementById('cfg-promptpay').value.trim();
-  if (!val) { box.innerHTML=''; return; }
-  const payload = buildPromptPayPayload(val);
-  if (!payload) {
-    box.innerHTML = '<span style="color:#F44336;font-size:12px">⚠️ รูปแบบไม่ถูกต้อง (ต้องเป็นเบอร์ 10 หลัก หรือเลขบัตร 13 หลัก)</span>';
-    return;
-  }
-  box.innerHTML = '<div id="pp-preview-qr" style="display:inline-block;border:2px solid #E3ECF7;border-radius:8px;padding:4px;background:white"></div>';
-  const qrDiv = document.getElementById('pp-preview-qr');
-  new QRCode(qrDiv, {
-    text: payload, width: 90, height: 90,
-    colorDark: '#000000', colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-function saveSettings() {
-  state.settings.scriptUrl  = document.getElementById('cfg-url').value.trim();
-  state.settings.villageName= document.getElementById('cfg-village').value.trim()||'ประปาหมู่บ้านชุกหว้า';
-  state.settings.unitPrice  = parseFloat(document.getElementById('cfg-unit-price').value)||8;
-  state.settings.minCharge  = parseFloat(document.getElementById('cfg-min-charge').value)||30;
-  state.settings.minUnits   = parseFloat(document.getElementById('cfg-min-units').value)||10;
-  state.settings.folderId     = document.getElementById('cfg-folder-id').value.trim();
-  const paperSel = document.getElementById('cfg-paper');
-  if (paperSel) state.settings.paperSize = paperSel.value;
-  const ppRaw = document.getElementById('cfg-promptpay').value.trim();
-  state.settings.promptpayId = ppRaw;
-  saveToStorage();
-  // Flash save button green
-  const btn = document.querySelector('#view-settings .btn-primary');
-  if (btn) { const orig=btn.textContent; btn.textContent='✅ บันทึกแล้ว!'; btn.style.background='#2E7D32'; setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; }, 2000); }
-  showToast('✅ บันทึกการตั้งค่าแล้ว');
-  if (state.settings.scriptUrl) { state.demoMode=false; refreshData(); }
-}
+    // ════════════════════════════════════════════════════════════
+    //  CALCULATIONS (สูตรคำนวณเงินค่าน้ำประปาหมู่บ้าน)
+    // ════════════════════════════════════════════════════════════
+    function calculateWaterBill(units, wellName) {
+      let r = STATE.rules;
+      let baseCost = Number(r.baseCost || 0);
+      let serviceFee = Number(r.serviceFee || 0);
+      let steps = r.steps || [];
 
-// ════════════════════════════════════════════════════════════
-//  EXPENSES
-// ════════════════════════════════════════════════════════════
-function openAddExpenseModal() {
-  // Set today's date
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('exp-date').value = today;
-  document.getElementById('exp-desc').value = '';
-  document.getElementById('exp-amount').value = '';
-  document.getElementById('exp-category').value = 'ค่าซ่อม';
-  // Populate well options
-  const sel = document.getElementById('exp-well');
-  sel.innerHTML = '<option value="">— ไม่ระบุบ่อ —</option>' +
-    state.wells.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  openModal('modal-add-expense');
-}
+      // ถ้าระบบมีอัตราแยกบ่อรายตัว ให้ดึงมาใช้
+      if (r.wellOverrides && r.wellOverrides[wellName]) {
+        const ov = r.wellOverrides[wellName];
+        if (ov.baseCost !== undefined) baseCost = Number(ov.baseCost);
+        if (ov.serviceFee !== undefined) serviceFee = Number(ov.serviceFee);
+        if (ov.steps !== undefined) steps = ov.steps;
+      }
 
-function saveExpense() {
-  const desc   = document.getElementById('exp-desc').value.trim();
-  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-  const cat    = document.getElementById('exp-category').value;
-  const wellId = document.getElementById('exp-well').value;
-  const date   = document.getElementById('exp-date').value;
+      let textDetails = `ขั้นต่ำรายเดือน: ${baseCost} บาท\nค่าบริการ: ${serviceFee} บาท\n`;
+      let total = baseCost + serviceFee;
+      let remaining = units;
+      let stepCost = 0;
 
-  if (!desc) { showToast('⚠️ กรอกรายละเอียดด้วยครับ'); return; }
-  if (amount <= 0) { showToast('⚠️ กรอกจำนวนเงินด้วยครับ'); return; }
+      for (let i=0; i<steps.length; i++) {
+        let st = steps[i];
+        let range = st.upTo - (i === 0 ? 0 : steps[i-1].upTo);
+        if (st.upTo === null) range = Infinity; 
 
-  const ym = date ? date.slice(0,7) : state.currentMonth;
-  const record = {
-    id: 'EXP' + Date.now().toString().slice(-8),
-    date, month: ym, category: cat, description: desc,
-    amount, wellId, savedAt: new Date().toISOString().split('T')[0]
-  };
+        if (remaining > 0) {
+          let taken = Math.min(remaining, range);
+          let cost = taken * st.rate;
+          stepCost += cost;
+          textDetails += ` - ช่วง ${i===0?1:steps[i-1].upTo+1} ถึง ${st.upTo||'📈'}: ${taken} หน่วย × ${st.rate} บ. = ${cost} บาท\n`;
+          remaining -= taken;
+        }
+      }
+      total += stepCost;
+      return { total: Math.round(total * 100) / 100, log: textDetails.trim() };
+    }
 
-  state.expenses.unshift(record);
-  saveToStorage();
-  closeModal('modal-add-expense');
-  renderDashboard();
-  renderExpenseList();
-  showToast(`✅ บันทึกแล้ว: ${desc} ${amount.toLocaleString()} บาท`);
+    // ════════════════════════════════════════════════════════════
+    //  RENDERING UI
+    // ════════════════════════════════════════════════════════════
+    function renderAll() {
+      renderDashboard();
+      renderWellFilterChips();
+      renderHouseList();
+      renderHistory();
+    }
 
-  // Sync to sheets
-  if (!state.demoMode && state.settings.scriptUrl) {
-    apiPost({ action: 'saveExpense', ...record }).catch(() => {});
-  }
-}
+    function renderDashboard() {
+      // หารายชื่อประวัติของเดือนล่าสุด
+      const currentMonth = getCurrentBillingMonth();
+      document.getElementById('dash-month-label').textContent = `ประจำเดือน ${formatThaiMonth(currentMonth)}`;
 
-function deleteExpense(id) {
-  if (!confirm('ลบรายการนี้?')) return;
-  state.expenses = state.expenses.filter(e => e.id !== id);
-  saveToStorage();
-  renderDashboard();
-  renderExpenseList();
-  showToast('🗑 ลบแล้ว');
-}
+      const mRecs = STATE.records.filter(r => r.month === currentMonth);
+      const doneCount = mRecs.filter(r => r.status === 'DONE').length;
+      const totalCount = STATE.houses.length;
+      
+      const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+      document.getElementById('stat-done-pct').textContent = pct + '%';
 
-function renderExpenseList() {
-  const el = document.getElementById('expense-list');
-  if (!el) return;
-  const list = state.expenses.filter(e => e.month === state.selectedMonth);
-  if (!list.length) {
-    el.innerHTML = '<div class="empty-state"><div class="emoji">🔧</div><p>ยังไม่มีค่าใช้จ่ายเดือนนี้</p></div>';
-    return;
-  }
-  el.innerHTML = list.map(e => {
-    const w = wellById(e.wellId);
-    return `<div class="expense-card">
-      <div class="expense-header">
-        <div>
-          <div class="expense-desc">${e.description}</div>
-          <div class="expense-cat">${e.category}${w ? ` · <span style="color:${w.color};font-weight:600">${w.name}</span>` : ''} · ${e.date||e.month}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <div class="expense-amount">${(e.amount||0).toLocaleString()} บ.</div>
-          <button class="expense-del" onclick="deleteExpense('${e.id}')">🗑</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
+      let totalMoney = 0;
+      let totalUnits = 0;
+      let wellStats = {};
 
-// History tab toggle
-let historyTab = 'bills';
-function switchHistoryTab(tab) {
-  historyTab = tab;
-  document.getElementById('tab-bills').classList.toggle('active', tab === 'bills');
-  document.getElementById('tab-expenses').classList.toggle('active', tab === 'expenses');
-  document.getElementById('bill-list').style.display    = tab === 'bills'    ? 'block' : 'none';
-  document.getElementById('expense-list').style.display = tab === 'expenses' ? 'block' : 'none';
-  if (tab === 'expenses') renderExpenseList();
-}
+      // สร้างรายชื่อบ่อให้ครบถ้วนก่อน
+      STATE.wells.forEach(w => wellStats[w] = { units: 0, money: 0 });
 
-// ════════════════════════════════════════════════════════════
-//  PWA ICON (water drop canvas)
-// ════════════════════════════════════════════════════════════
-function makePwaIcon(size) {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d');
-  const grad = ctx.createLinearGradient(0,0,0,size);
-  grad.addColorStop(0,'#1E88E5'); grad.addColorStop(1,'#0D47A1');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(0,0,size,size,size*0.22);
-  else { ctx.rect(0,0,size,size); }
-  ctx.fill();
-  const cx=size/2, top=size*0.13, bot=size*0.84, r=size*0.28;
-  ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  ctx.beginPath();
-  ctx.moveTo(cx, top);
-  ctx.bezierCurveTo(cx+size*0.32, size*0.38, cx+r, bot-r, cx, bot);
-  ctx.bezierCurveTo(cx-r, bot-r, cx-size*0.32, size*0.38, cx, top);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(cx-size*0.09, size*0.47, size*0.07, size*0.12, -0.4, 0, Math.PI*2);
-  ctx.fill();
-  return c.toDataURL('image/png');
-}
+      mRecs.forEach(r => {
+        if (r.status === 'DONE') {
+          totalMoney += Number(r.amount || 0);
+          totalUnits += Number(r.unitsUsed || 0);
+          
+          let w = r.wellName || 'ไม่ระบุ';
+          if (!wellStats[w]) wellStats[w] = { units: 0, money: 0 };
+          wellStats[w].units += Number(r.unitsUsed || 0);
+          wellStats[w].money += Number(r.amount || 0);
+        }
+      });
 
-// ════════════════════════════════════════════════════════════
-//  PWA MANIFEST
-// ════════════════════════════════════════════════════════════
-(function registerManifest() {
-  const icon192 = makePwaIcon(192);
-  const icon512 = makePwaIcon(512);
-  const manifest = {
-    name: 'ประปาหมู่บ้านชุกหว้า',
-    short_name: 'ประปาชุกหว้า',
-    description: 'ระบบจัดการประปาหมู่บ้านชุกหว้า',
-    start_url: './',
-    scope: './',
-    display: 'standalone',
-    orientation: 'portrait',
-    background_color: '#F0F4FF',
-    theme_color: '#1565C0',
-    icons: [
-      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-    ]
-  };
-  const mblob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-  const murl  = URL.createObjectURL(mblob);
-  const ml = document.getElementById('pwa-manifest');
-  if (ml) ml.setAttribute('href', murl);
-  const al = document.createElement('link');
-  al.rel = 'apple-touch-icon'; al.href = icon192;
-  document.head.appendChild(al);
-})();
+      document.getElementById('dash-total-money').textContent = totalMoney.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('stat-total-units').textContent = totalUnits.toLocaleString();
+      document.getElementById('stat-avg-bill').textContent = doneCount ? Math.round(totalMoney / doneCount) + ' ฿' : '0 ฿';
 
-// ════════════════════════════════════════════════════════════
-//  SERVICE WORKER
-// ════════════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
-  const sw=`const C='prapa-v3';
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./?pwa'])));
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  if(e.request.url.includes('script.google.com')||e.request.url.includes('googleapis.com')){
-    e.respondWith(fetch(e.request));
-    return;
-  }
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-});`;
-  const swBlob=new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
-}
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" defer></script>
+      // วาดแผงความคืบหน้าบ่อ
+      let barHtml = '';
+      const maxWellMoney = Math.max(...Object.values(wellStats).map(x => x.money), 1);
+      Object.keys(wellStats).forEach((w, idx) => {
+        const item = wellStats[w];
+        const color = WELL_COLORS[idx % WELL_COLORS.length];
+        const wPct = Math.min((item.money / maxWellMoney) * 100, 100);
+        barHtml += `
+          <div class="well-bar-row">
+            <div class="well-bar-header">
+              <span class="well-bar-name"><span class="well-dot" style="background:${color}"></span>${w}</span>
+              <span class="well-bar-amount">${item.money.toFixed(2)} บาท</span>
+            </div>
+            <div class="well-bar-track">
+              <div class="well-bar-fill" style="width:${wPct}%; background:${color}"></div>
+            </div>
+          </div>`;
+      });
+      document.getElementById('well-bars-container').innerHTML = barHtml || '<p style="color:var(--text-muted)">ไม่มีข้อมูลแยกบ่อ</p>';
+
+      // วาดทำเนียบบ้านที่ใช้น้ำมากที่สุด (Top 3)
+      const sorted = [...mRecs].filter(r => r.status==='DONE').sort((a,b) => b.unitsUsed - a.unitsUsed).slice(0,3);
+      let rankHtml = '';
+      sorted.forEach((r, i) => {
+        rankHtml += `
+          <div class="rank-row">
+            <div class="rank-num rank-${i+1}">${i+1}</div>
+            <div class="rank-info">
+              <div class="rank-name">บ้านเลขที่ ${r.houseAddress}</div>
+              <div class="rank-addr">${r.ownerName || 'ไม่ทราบชื่อ'}</div>
+            </div>
+            <div class="rank-units">${r.unitsUsed} หน่วย</div>
+          </div>`;
+      });
+      document.getElementById('rank-container').innerHTML = rankHtml || '<p style="color:var(--text-muted); text-align:center;">ยังไม่มีการบันทึกข้อมูลเดือนนี้</p>';
+    }
+
+    function renderWellFilterChips() {
+      const row = document.getElementById('well-filter-row');
+      row.innerHTML = `<button class="filter-chip ${STATE.currentWellFilter==='ALL'?'active':''}" onclick="filterWell('ALL', this)">🏡 ทั้งหมด</button>`;
+      STATE.wells.forEach((w, i) => {
+        row.innerHTML += `<button class="filter-chip ${STATE.currentWellFilter===w?'active':''}" onclick="filterWell('${w}', this)">💧 ${w}</button>`;
+      });
+    }
+
+    function renderHouseList() {
+      const container = document.getElementById('house-list-container');
+      const curMonth = getCurrentBillingMonth();
+      const q = document.getElementById('search-input').value.trim().toLowerCase();
+
+      // สรุปข้อมูลตัวเลขแถวบนสุด
+      let cAll=STATE.houses.length, cPending=0, cDone=0, cNo=0;
+      
+      const mapped = STATE.houses.map(h => {
+        const rec = STATE.records.find(r => r.houseAddress === h.address && r.month === curMonth);
+        return {
+          ...h,
+          status: rec ? rec.status : 'PENDING',
+          units: rec ? rec.unitsUsed : 0,
+          amount: rec ? rec.amount : 0
+        };
+      });
+
+      // กรองตามประเภทบ่อน้ำ และ คำค้นหาตัวเลข/ชื่อ
+      let filtered = mapped.filter(h => {
+        if (STATE.currentWellFilter !== 'ALL' && h.wellName !== STATE.currentWellFilter) return false;
+        if (q) {
+          const m1 = h.address.toLowerCase().includes(q);
+          const m2 = (h.ownerName || '').toLowerCase().includes(q);
+          if (!m1 && !m2) return false;
+        }
+        return true;
+      });
+
+      // เพื่อนับยอดรวมแยกสถานะทั้งหมด
+      mapped.forEach(h => {
+        if(STATE.currentWellFilter !== 'ALL' && h.wellName !== STATE.currentWellFilter) return;
+        if (h.status === 'DONE') cDone++;
+        else if (h.status === 'NO_ACCESS') cNo++;
+        else cPending++;
+      });
+
+      document.getElementById('s-all').textContent = filtered.length;
+      document.getElementById('s-pending').textContent = cPending;
+      document.getElementById('s-done').textContent = cDone;
+      document.getElementById('s-noaccess').textContent = cNo;
+
+      if (!filtered.length) {
+        container.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><p>ไม่พบรายการบ้านที่ค้นหา</p></div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(h => {
+        let bClass='', bTxt='', cClass='';
+        if (h.status === 'DONE') { bClass='badge-done'; bTxt=`🎉 ${h.amount} ฿`; cClass='done-card'; }
+        else if (h.status === 'NO_ACCESS') { bClass='badge-noaccess'; bTxt='❌ ปิดบ้าน'; cClass='noaccess-card'; }
+        else { bClass='badge-pending'; bTxt='⏳ รอจด'; }
+
+        const wIdx = STATE.wells.indexOf(h.wellName);
+        const wColor = wIdx >= 0 ? WELL_COLORS[wIdx % WELL_COLORS.length] : '#90A4AE';
+
+        html += `
+          <div class="house-card ${cClass}" onclick="clickHouse('${h.address}')">
+            <div class="house-avatar" style="background:${wColor}">${h.address.replace('/', '-')}</div>
+            <div class="house-info">
+              <div class="house-name">บ้านเลขที่ ${h.address}</div>
+              <div class="house-meta">${h.ownerName || 'ไม่ระบุชื่อเจ้าของ'}</div>
+              <div class="house-well-tag" style="background:${wColor}">💧 บ่อ: ${h.wellName || 'ทั่วไป'}</div>
+            </div>
+            <div class="house-badge ${bClass}">${bTxt}</div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderHistory() {
+      // ดึงเดือนที่มีประวัติทั้งหมดออกมาสร้างปุ่ม
+      const months = [...new Set(STATE.records.map(r => r.month))].sort().reverse();
+      const mRow = document.getElementById('history-months');
+      
+      if (!months.length) {
+        mRow.innerHTML = '';
+        document.getElementById('history-list-container').innerHTML = `<div class="empty-state"><div class="emoji">📭</div><p>ยังไม่มีประวัติค่าน้ำในระบบ</p></div>`;
+        return;
+      }
+
+      let activeM = localStorage.getItem('prapa_history_active_month') || months[0];
+      if (!months.includes(activeM)) activeM = months[0];
+      localStorage.setItem('prapa_history_active_month', activeM);
+
+      let mHtml = '';
+      months.forEach(m => {
+        mHtml += `<button class="month-chip ${m===activeM?'active':''}" onclick="selectHistoryMonth('${m}')">${formatThaiMonth(m)}</button>`;
+      });
+      mRow.innerHTML = mHtml;
+
+      const items = STATE.records.filter(r => r.month === activeM);
+      let listHtml = '';
+      items.forEach(r => {
+        if(r.status !== 'DONE') return;
+        listHtml += `
+          <div class="bill-card">
+            <div class="bill-header">
+              <span class="bill-house">🏡 บ้านเลขที่ ${r.houseAddress}</span>
+              <span class="bill-amount">${Number(r.amount).toFixed(2)} ฿</span>
+            </div>
+            <div class="bill-details">
+              <div class="bill-detail">ผู้ใช้น้ำ: <span>${r.ownerName||'-'}</span></div>
+              <div class="bill-detail">เลขครั้งนี้: <span>${r.currentMeter}</span></div>
+              <div class="bill-detail">ครั้งก่อน: <span>${r.prevMeter}</span></div>
+              <div class="bill-detail">ใช้ไป: <span>${r.unitsUsed} หน่วย</span></div>
+            </div>
+          </div>`;
+      });
+      document.getElementById('history-list-container').innerHTML = listHtml || `<div class="empty-state"><p>ไม่มีประวัติการจดน้ำในเดือนนี้</p></div>`;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  UI ACTIONS CONTROLLER
+    // ════════════════════════════════════════════════════════════
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById('view-' + viewId).classList.add('active');
+      if(btn) btn.classList.add('active');
+      
+      // ปิด-เปิดปุ่ม FAB ลอย เฉพาะในเมนู "จดค่าน้ำ"
+      document.getElementById('fab-add').style.display = (viewId === 'houses') ? 'flex' : 'none';
+    }
+
+    function filterWell(wellName, btn) {
+      STATE.currentWellFilter = wellName;
+      document.querySelectorAll('#well-filter-row .filter-chip').forEach(b => b.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+      renderHouseList();
+    }
+
+    function selectHistoryMonth(m) {
+      localStorage.setItem('prapa_history_active_month', m);
+      renderHistory();
+    }
+
+    function handleSearch() {
+      const clearBtn = document.getElementById('search-clear');
+      clearBtn.style.display = document.getElementById('search-input').value ? 'block' : 'none';
+      renderHouseList();
+    }
+
+    function clearSearch() {
+      document.getElementById('search-input').value = '';
+      handleSearch();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  RECORD MODAL ACTIONS
+    // ════════════════════════════════════════════════════════════
+    function clickHouse(addr) {
+      const house = STATE.houses.find(h => h.address === addr);
+      if(!house) return;
+      STATE.activeHouse = house;
+
+      const curMonth = getCurrentBillingMonth();
+      const rec = STATE.records.find(r => r.houseAddress === addr && r.month === curMonth);
+
+      document.getElementById('m-title').textContent = `🏡 บ้านเลขที่ ${house.address}`;
+      document.getElementById('m-subtitle').textContent = `ผู้รับผิดชอบระบบบันทึก: เดือน${formatThaiMonth(curMonth)}`;
+      document.getElementById('m-owner').textContent = house.ownerName || 'ไม่ระบุชื่อ';
+      document.getElementById('m-well').textContent = house.wellName || 'ทั่วไป';
+      document.getElementById('m-prev').textContent = house.lastMeter;
+
+      // รีเซ็ตค่าฟอร์มภายในหน้าต่างกรอกข้อมูล
+      const inp = document.getElementById('m-current');
+      if (rec && rec.status === 'DONE') {
+        inp.value = rec.currentMeter;
+        setModalStatus('DONE');
+      } else if (rec && rec.status === 'NO_ACCESS') {
+        inp.value = '';
+        setModalStatus('NO_ACCESS');
+      } else {
+        inp.value = '';
+        setModalStatus('DONE');
+      }
+
+      onCurrentInput();
+      document.getElementById('modal-overlay').classList.add('active');
+      setTimeout(() => inp.focus(), 100);
+    }
+
+    function closeModal(e) {
+      document.getElementById('modal-overlay').classList.remove('active');
+      STATE.activeHouse = null;
+    }
+
+    function setModalStatus(status) {
+      STATE.modalStatus = status;
+      const bDone = document.getElementById('ms-done');
+      const bNo = document.getElementById('ms-noaccess');
+      
+      if (status === 'DONE') {
+        bDone.className = 'well-select-chip active';
+        bNo.className = 'well-select-chip';
+        document.getElementById('m-current').disabled = false;
+      } else {
+        bDone.className = 'well-select-chip';
+        bNo.className = 'well-select-chip active';
+        document.getElementById('m-current').value = '';
+        document.getElementById('m-current').disabled = true;
+      }
+      onCurrentInput();
+    }
+
+    function onCurrentInput() {
+      const box = document.getElementById('m-calc-box');
+      if (STATE.modalStatus !== 'DONE') { box.style.display = 'none'; return; }
+
+      const curr = Number(document.getElementById('m-current').value || 0);
+      const prev = Number(STATE.activeHouse ? STATE.activeHouse.lastMeter : 0);
+      
+      if (!curr || curr < prev) { box.style.display = 'none'; return; }
+
+      box.style.display = 'block';
+      const units = curr - prev;
+      const calc = calculateWaterBill(units, STATE.activeHouse.wellName);
+
+      document.getElementById('r-addr').textContent = STATE.activeHouse.address;
+      document.getElementById('r-owner').textContent = STATE.activeHouse.ownerName || '-';
+      document.getElementById('r-curr').textContent = curr;
+      document.getElementById('r-prev').textContent = prev;
+      document.getElementById('r-units').textContent = units + ' หน่วย';
+      document.getElementById('r-step-detail').textContent = calc.log;
+      document.getElementById('r-total').textContent = calc.total.toFixed(2) + ' บาท';
+      document.getElementById('r-big-total').textContent = calc.total.toFixed(2) + ' ฿';
+
+      // พ่วงการสร้างคิวอาร์โค้ดพร้อมเพย์ทันทีเพื่ออำนวยความสะดวก
+      const promptpayId = STATE.rules.promptpayId || '';
+      if (promptpayId && calc.total > 0) {
+        document.getElementById('r-qr-wrap').style.display = 'block';
+        document.getElementById('r-qr-img').src = `https://promptpay.io/${promptpayId}/${calc.total}.png`;
+      } else {
+        document.getElementById('r-qr-wrap').style.display = 'none';
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SAVE & SEND WATER RECORD TO SERVER
+    // ════════════════════════════════════════════════════════════
+    async function saveMeter() {
+      if(!STATE.activeHouse) return;
+      const house = STATE.activeHouse;
+      const curMonth = getCurrentBillingMonth();
+
+      let currentMeter = 0;
+      let unitsUsed = 0;
+      let amount = 0;
+
+      if (STATE.modalStatus === 'DONE') {
+        const cVal = document.getElementById('m-current').value;
+        if (!cVal) { alert('กรุณากรอกตัวเลขมิเตอร์ก่อนบันทึกครับ'); return; }
+        currentMeter = Number(cVal);
+        if (currentMeter < house.lastMeter) { alert('❌ เลขมิเตอร์ใหม่น้อยกว่าครั้งก่อนหน้าไม่ได้ครับ'); return; }
+        unitsUsed = currentMeter - house.lastMeter;
+        amount = calculateWaterBill(unitsUsed, house.wellName).total;
+      }
+
+      // บันทึกลงตัวแปรในเครื่องทันทีเพื่อไม่ให้หน้าจอช้า (ลดดีเลย์โครงสร้าง)
+      let rec = STATE.records.find(r => r.houseAddress === house.address && r.month === curMonth);
+      if(!rec) {
+        rec = { houseAddress: house.address, month: curMonth };
+        STATE.records.push(rec);
+      }
+      rec.status = STATE.modalStatus;
+      rec.ownerName = house.ownerName;
+      rec.wellName = house.wellName;
+      rec.prevMeter = house.lastMeter;
+      rec.currentMeter = currentMeter;
+      rec.unitsUsed = unitsUsed;
+      rec.amount = amount;
+
+      if (STATE.modalStatus === 'DONE') {
+        house.lastMeter = currentMeter; // เลื่อนเลขออโต้ในระบบ
+      }
+
+      saveToLocalStorage();
+      renderAll();
+      closeModal();
+      showToast('💾 เซฟค่าน้ำเข้าเครื่องสำเร็จ');
+
+      // อัปโหลดข้อมูลขึ้น Google Sheet เบื้องหลังออโต้
+      if (STATE.cfgUrl) {
+        try {
+          const apiURL = `${STATE.cfgUrl}?action=save&month=${curMonth}&address=${encodeURIComponent(house.address)}&status=${rec.status}&currentMeter=${currentMeter}&unitsUsed=${unitsUsed}&amount=${amount}`;
+          const res = await fetch(apiURL);
+          const feedback = await res.json();
+          if (feedback && feedback.ok) {
+            showToast('☁️ ซิงค์ค่าน้ำขึ้นระบบกูเกิลชีตเรียบร้อย');
+          }
+        } catch(e) {
+          console.error(e);
+          showToast('📶 ติดต่อแม่ข่ายไม่ได้ ข้อมูลจะถูกเก็บไว้ในเครื่องก่อน');
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  QUICK ADD DISPATCHER (ฟังก์ชันเสริมลงทะเบียนบ้านใหม่เพิ่ม)
+    // ════════════════════════════════════════════════════════════
+    function openQuickAdd() {
+      document.getElementById('qa-addr').value = '';
+      document.getElementById('qa-owner').value = '';
+      document.getElementById('qa-init').value = '0';
+      
+      let wHtml = '';
+      STATE.wells.forEach((w, idx) => {
+        wHtml += `<button class="well-select-chip ${idx===0?'active':''}" onclick="selectQuickAddWell('${w}', this)">${w}</button>`;
+      });
+      document.getElementById('qa-well-row').innerHTML = wHtml || '<p>ไม่มีข้อมูลบ่อประปา</p>';
+      STATE.activeQuickWell = STATE.wells[0] || '';
+
+      document.getElementById('modal-quick-overlay').classList.add('active');
+    }
+
+    function selectQuickAddWell(w, btn) {
+      STATE.activeQuickWell = w;
+      document.querySelectorAll('#qa-well-row .well-select-chip').forEach(b => b.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+    }
+
+    function closeQuickAddModal() {
+      document.getElementById('modal-quick-overlay').classList.remove('remove');
+      document.getElementById('modal-quick-overlay').classList.remove('active');
+    }
+
+    async function saveQuickAdd() {
+      const addr = document.getElementById('qa-addr').value.trim();
+      const owner = document.getElementById('qa-owner').value.trim();
+      const initM = Number(document.getElementById('qa-init').value || 0);
+      const well = STATE.activeQuickWell;
+
+      if (!addr) { alert('กรุณากรอกบ้านเลขที่ก่อนครับ'); return; }
+      if (STATE.houses.some(h => h.address === addr)) { alert('บ้านเลขที่นี้ได้รับการลงทะเบียนแล้ว'); return; }
+
+      const newHouse = { address: addr, ownerName: owner, lastMeter: initM, wellName: well };
+      STATE.houses.push(newHouse);
+      saveToLocalStorage();
+      renderAll();
+      closeQuickAddModal();
+      showToast('🏡 บันทึกบ้านใหม่เข้าแอปแล้ว');
+
+      if (STATE.cfgUrl) {
+        try {
+          const apiURL = `${STATE.cfgUrl}?action=addHouse&address=${encodeURIComponent(addr)}&ownerName=${encodeURIComponent(owner)}&lastMeter=${initM}&wellName=${encodeURIComponent(well)}`;
+          const res = await fetch(apiURL);
+          const d = await res.json();
+          if (d && d.ok) showToast('☁️ อัปเดตรายชื่อบ้านขึ้นส่วนกลางเรียบร้อย');
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  AUXILIARY HELPER FUNCTIONS
+    // ════════════════════════════════════════════════════════════
+    function getCurrentBillingMonth() {
+      const d = new Date();
+      let m = d.getMonth() + 1;
+      let y = d.getFullYear();
+      // หากวันที่ปัจจุบันเกินวันที่ 25 ไปแล้ว มักอนุมานว่าเป็นการจดรอบบิลของเดือนถัดไป (ปรับได้ตามชอบ)
+      if (d.getDate() > 25) { m++; if (m > 12) { m = 1; y++; } }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+
+    function formatThaiMonth(yymm) {
+      if(!yymm) return '--';
+      const p = yymm.split('-');
+      const mNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+      return `${mNames[Number(p[1])-1]} ${Number(p[0])+543}`;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function setupPullToRefresh() {
+      let touchStart = 0;
+      const main = document.querySelector('.main');
+      const ptr = document.getElementById('ptr');
+
+      main.addEventListener('touchstart', e => { touchStart = e.touches[0].clientY; });
+      main.addEventListener('touchmove', e => {
+        const diff = e.touches[0].clientY - touchStart;
+        if (main.scrollTop === 0 && diff > 50) { ptr.style.display = 'block'; }
+      });
+      main.addEventListener('touchend', () => {
+        if (ptr.style.display === 'block') { ptr.style.display = 'none'; syncData(); }
+      });
+    }
+  </script>
 </body>
 </html>
