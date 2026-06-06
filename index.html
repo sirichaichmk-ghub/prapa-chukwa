@@ -251,20 +251,14 @@
     .tab-btn { flex:1; padding:9px; border:none; border-radius:9px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; background:none; color:var(--text-muted); transition:all .2s; }
     .tab-btn.active { background:var(--primary); color:white; }
 
-    /* ── PRINT ── */
+    /* ── PRINT (พิมพ์จากรูปภาพใบเสร็จ — เสถียรบนมือถือ) ── */
     @media print {
       body * { visibility:hidden !important; }
       #print-area, #print-area * { visibility:visible !important; }
-      #print-area { position:fixed; top:0; left:0; }
-      @page { size:58mm auto; margin:2mm; }
+      #print-area { display:block !important; position:fixed; top:0; left:0; }
     }
-    #print-area { display:none; width:54mm; font-family:'Courier New',monospace; font-size:8.5pt; color:black; padding:1mm 2mm; }
-    #print-area .p-center { text-align:center; }
-    #print-area .p-title { font-size:9.5pt; font-weight:bold; text-align:center; line-height:1.4; }
-    #print-area .p-big { font-size:13pt; font-weight:bold; text-align:center; margin:1.5mm 0; }
-    #print-area .p-row { display:flex; justify-content:space-between; margin:0.8mm 0; font-size:8pt; }
-    #print-area .p-divider { border:none; border-top:1px dashed #000; margin:1.5mm 0; }
-    #print-area img { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #print-area { display:none; }
+    #print-area img { display:block; width:100%; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
     /* ── โหมดตัวอักษรใหญ่ (สำหรับผู้สูงวัย) ── */
     body.large-text .header-title h1 { font-size:19px; }
@@ -545,35 +539,16 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="modal-title">🧾 ใบเสร็จรับเงิน</div>
-      <button onclick="closeModal('modal-receipt')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
+      <button onclick="onReceiptDone()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
     </div>
     <div class="receipt-preview" id="receipt-display"></div>
     <div class="btn-row" style="margin-bottom:9px">
-      <button class="btn btn-success" onclick="confirmSaveBill()" style="flex:1" id="btn-save">💾 บันทึก</button>
+      <button class="btn btn-success" onclick="doSaveBill()" style="flex:1" id="btn-save">💾 บันทึก</button>
       <button class="btn btn-primary" onclick="printReceipt()" style="flex:1">🖨️ พิมพ์</button>
     </div>
     <div class="btn-row" style="margin-bottom:9px">
       <button class="btn" id="btn-share" onclick="shareReceipt()" style="flex:1;background:linear-gradient(135deg,#7B1FA2 0%,#9C27B0 100%);color:#fff;box-shadow:0 4px 14px rgba(123,31,162,.3)">📤 แชร์ / ส่งไลน์</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-receipt')" style="flex:1">← กลับ</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: CONFIRM SAVE -->
-<div class="modal-overlay" id="modal-confirm-save">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">ยืนยันการบันทึก</div>
-    <div class="modal-subtitle">โปรดตรวจดูความถูกต้องก่อนบันทึก</div>
-    <div class="confirm-summary">
-      <div class="cs-house" id="confirm-house">-</div>
-      <div class="cs-units" id="confirm-units">-</div>
-      <div class="cs-amount" id="confirm-amount">-</div>
-      <div class="cs-ask">ข้อมูลถูกต้องไหมครับ?</div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-outline" onclick="closeModal('modal-confirm-save')" style="flex:1">← แก้ไข</button>
-      <button class="btn btn-success" id="btn-confirm-save" onclick="doSaveBill()" style="flex:2">✅ บันทึก</button>
+      <button class="btn btn-outline" id="btn-receipt-done" onclick="onReceiptDone()" style="flex:1">← กลับ</button>
     </div>
   </div>
 </div>
@@ -1549,10 +1524,19 @@ function openReceipt() {
   closeModal('modal-reading');
   const h=state.selectedHouse, d=state.readingData, s=state.settings;
   const now=new Date();
-  const dateStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'});
-  const monthStr= now.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
-  const billNo  = 'B'+Date.now().toString().slice(-6);
-  const w = wellById(state.selectedWellId);
+  const r = {
+    billNo:  'B'+Date.now().toString().slice(-6),
+    dateStr: now.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'}),
+    monthStr:now.toLocaleDateString('th-TH',{month:'long',year:'numeric'}),
+    h, d, s, w: wellById(state.selectedWellId)
+  };
+  showReceipt(r, { allowSave:true });
+}
+
+// แสดงใบเสร็จในหน้าต่าง (ใช้ทั้งตอนจดใหม่ และพิมพ์ซ้ำจากประวัติ)
+function showReceipt(r, opts) {
+  opts = opts || {};
+  const {billNo,dateStr,monthStr,h,d,s,w}=r;
 
   document.getElementById('receipt-display').innerHTML = `
     <div class="receipt-title">${s.villageName}</div>
@@ -1583,9 +1567,16 @@ function openReceipt() {
       <div style="font-size:8px;color:#aaa;margin-top:2px">${s.promptpayId}</div>
     </div>` : ''}`;
 
-  state.currentReceipt = { billNo, dateStr, monthStr, h, d, s, w };
-  document.getElementById('btn-save').disabled = false;
-  document.getElementById('btn-save').textContent = '💾 บันทึก';
+  state.currentReceipt = r;
+  const saveBtn = document.getElementById('btn-save');
+  if (saveBtn) {
+    saveBtn.style.display = (opts.allowSave === false) ? 'none' : '';
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 บันทึก';
+  }
+  const doneBtn = document.getElementById('btn-receipt-done');
+  if (doneBtn) { doneBtn.textContent = '← กลับ'; doneBtn.classList.add('btn-outline'); doneBtn.classList.remove('btn-success'); }
+  state._justSaved = false;
   openModal('modal-receipt');
 
   // Render PromptPay QR หลัง modal เปิดแล้ว
@@ -1606,58 +1597,30 @@ function openReceipt() {
   }
 }
 
-function printReceipt() {
-  const r=state.currentReceipt; if (!r) return;
-  const {billNo,dateStr,monthStr,h,d,s,w}=r;
-  document.getElementById('print-area').innerHTML = `
-    <div class="p-title">${s.villageName}</div>
-    <div class="p-center" style="font-size:8pt">ใบเสร็จรับเงินค่าน้ำประปา</div>
-    <hr class="p-divider"/>
-    <div class="p-row"><span>เลขที่</span><span>${billNo}</span></div>
-    <div class="p-row"><span>วันที่</span><span>${dateStr}</span></div>
-    <div class="p-row"><span>รอบ</span><span>${monthStr}</span></div>
-    ${w?`<div class="p-row"><span>บ่อ</span><span>${w.name}</span></div>`:''}
-    <hr class="p-divider"/>
-    <div class="p-row"><span>บ้าน</span><span>${h.address}</span></div>
-    <div class="p-row"><span>ชื่อ</span><span>${h.name}</span></div>
-    <hr class="p-divider"/>
-    <div class="p-row"><span>อ่านครั้งก่อน</span><span>${h.lastReading||0}</span></div>
-    <div class="p-row"><span>อ่านครั้งนี้</span><span>${d.currentReading}</span></div>
-    <div class="p-row" style="font-weight:bold"><span>ใช้ไป</span><span>${d.units} หน่วย</span></div>
-    <hr class="p-divider"/>
-    ${d.waterCost>0?`<div class="p-row"><span>ค่าน้ำ</span><span>${d.waterCost} บ.</span></div>`:''}
-    <div class="p-row"><span>ค่าบริการ</span><span>${d.serviceFee} บ.</span></div>
-    <hr class="p-divider"/>
-    <div class="p-big">${d.total.toLocaleString()} บาท</div>
-    <hr class="p-divider"/>
-    ${s.promptpayId ? `<div class="p-center" style="font-size:7pt;margin-bottom:1mm">สแกน PromptPay จ่ายได้เลย</div>
-    <div class="p-center" id="print-qr-box"></div>
-    <div class="p-center" style="font-size:7pt;margin-top:1mm">${s.promptpayId}</div>
-    <hr class="p-divider"/>` : ''}
-    <div class="p-center" style="font-size:8pt">ขอบคุณครับ/ค่ะ</div>`;
-
-  // Render QR สำหรับพิมพ์ (ต้องทำก่อน print)
-  if (s.promptpayId && typeof QRCode !== 'undefined') {
-    try {
-      const qrBox = document.getElementById('print-qr-box');
-      if (qrBox) {
-        const payload = buildPromptPayPayload(s.promptpayId);
-        if (payload) {
-          const qrDataUrl = generateQRDataUrl(payload, 200);
-          if (qrDataUrl) {
-            const img = document.createElement('img');
-            img.src = qrDataUrl;
-            img.style.cssText = 'width:36mm;height:36mm;display:block;margin:1mm auto';
-            qrBox.appendChild(img);
-          }
-        }
-      }
-    } catch(e) { console.warn('QR print:', e); }
+async function printReceipt() {
+  const r = state.currentReceipt; if (!r) return;
+  const src  = document.getElementById('receipt-display');
+  const area = document.getElementById('print-area');
+  if (!src || !area || !window.html2canvas) { showToast('⏳ ยังเตรียมใบเสร็จไม่เสร็จ — ลองอีกครั้ง'); return; }
+  showLoading('กำลังเตรียมพิมพ์...');
+  try {
+    // แปลงใบเสร็จเป็นรูปก่อน แล้วค่อยพิมพ์ (เสถียรกว่าบนมือถือ/เครื่องพิมพ์ความร้อน)
+    const canvas = await html2canvas(src, { scale:3, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
+    const dataUrl = canvas.toDataURL('image/png');
+    area.innerHTML = `<img src="${dataUrl}" alt="ใบเสร็จ" />`;
+    applyPaperSize(state.settings.paperSize || '80mm');
+    const img = area.querySelector('img');
+    const doPrint = () => { hideLoading(); try { window.print(); } catch(e) {} };
+    if (img && !img.complete) {
+      img.onload = doPrint; img.onerror = doPrint;
+      setTimeout(doPrint, 800);   // เผื่อ onload ไม่ทำงาน
+    } else {
+      setTimeout(doPrint, 120);
+    }
+  } catch(e) {
+    hideLoading();
+    showToast('⚠️ เตรียมพิมพ์ไม่สำเร็จ ลองใหม่อีกครั้ง');
   }
-  // กำหนดขนาดกระดาษตามการตั้งค่า
-  applyPaperSize(state.settings.paperSize || '58mm');
-
-  window.print();
 }
 
 function applyPaperSize(size) {
@@ -1668,11 +1631,11 @@ function applyPaperSize(size) {
     document.head.appendChild(styleEl);
   }
   if (size === 'A4') {
-    styleEl.textContent = `@media print { @page { size:A4; margin:12mm; } #print-area { width:120mm; font-size:11pt; } #print-area .p-title{font-size:14pt} #print-area .p-big{font-size:18pt} #print-area .p-row{font-size:11pt} #print-area img{width:42mm!important;height:42mm!important} }`;
-  } else if (size === '80mm') {
-    styleEl.textContent = `@media print { @page { size:80mm auto; margin:3mm; } #print-area { width:74mm; font-size:10pt; } #print-area .p-title{font-size:11pt} #print-area .p-big{font-size:15pt} #print-area .p-row{font-size:9.5pt} #print-area img{width:48mm!important;height:48mm!important} }`;
+    styleEl.textContent = `@media print { @page { size:A4; margin:12mm; } #print-area { width:90mm; margin:0 auto; } #print-area img { width:100%!important; height:auto!important; } }`;
+  } else if (size === '58mm') {
+    styleEl.textContent = `@media print { @page { size:58mm auto; margin:2mm; } #print-area { width:54mm; } #print-area img { width:100%!important; height:auto!important; } }`;
   } else {
-    styleEl.textContent = `@media print { @page { size:58mm auto; margin:2mm; } #print-area { width:54mm; font-size:8.5pt; } #print-area img{width:36mm!important;height:36mm!important} }`;
+    styleEl.textContent = `@media print { @page { size:80mm auto; margin:3mm; } #print-area { width:74mm; } #print-area img { width:100%!important; height:auto!important; } }`;
   }
 }
 
@@ -1789,27 +1752,13 @@ async function autoUploadReceiptImage() {
   } catch(e) { /* เงียบ — ผู้ใช้ยังกดปุ่มบันทึกรูปเองได้ */ }
 }
 
-function confirmSaveBill() {
-  const r=state.currentReceipt; if (!r) return;
-  const {h,d}=r;
-  document.getElementById('confirm-house').textContent =
-    (h.address && h.address !== '-') ? ('บ้าน ' + h.address + ' · ' + h.name) : h.name;
-  document.getElementById('confirm-units').textContent = (d.units||0).toLocaleString() + ' หน่วย';
-  document.getElementById('confirm-amount').textContent = (d.total||0).toLocaleString() + ' บาท';
-  const cb=document.getElementById('btn-confirm-save');
-  if (cb) { cb.disabled=false; cb.textContent='✅ บันทึก'; }
-  openModal('modal-confirm-save');
-}
-
 async function doSaveBill() {
   if (state.saving) return;            // กันกดบันทึกซ้ำ
   state.saving = true;
   const r=state.currentReceipt; if (!r) { state.saving=false; return; }
-  const {h,d,s,billNo,w}=r;
-  const cbtn=document.getElementById('btn-confirm-save');
-  if (cbtn) { cbtn.disabled=true; cbtn.textContent='⏳ กำลังบันทึก...'; }
+  const {h,d,s,billNo}=r;
   const btn=document.getElementById('btn-save');
-  btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...';
+  if (btn) { btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...'; }
 
   const ym=state.currentMonth;
   const record={
@@ -1823,7 +1772,6 @@ async function doSaveBill() {
   const hi=state.houses.findIndex(hh=>hh.id===h.id);
   if (hi>=0) { state.houses[hi].lastReading=d.currentReading; state.houses[hi].lastDate=new Date().toISOString().split('T')[0]; state.houses[hi].wellId=state.selectedWellId||state.houses[hi].wellId; }
   saveToStorage(); renderAll();
-  closeModal('modal-confirm-save');
 
   // เตรียมรูปใบเสร็จครั้งเดียว ใช้ทั้งเซฟลงเครื่องและอัปขึ้น Drive
   const fname = `ใบเสร็จ_${h.address||''}_${r.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
@@ -1839,30 +1787,34 @@ async function doSaveBill() {
     } catch(e) { /* ข้ามรูปถ้าสร้างไม่ได้ */ }
   }
 
-  if (state.demoMode) {
-    state.saving=false;
-    showToast('✅ บันทึกแล้ว (Demo)'); btn.textContent='✅ บันทึกแล้ว';
-    setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 700);
-    return;
-  }
-
-  // ส่งขึ้น Sheets + Drive ในปุ่มเดียว (ออฟไลน์ → เข้าคิวส่งซ้ำอัตโนมัติ)
-  showLoading('กำลังบันทึก...');
+  // ส่งขึ้น Sheets + Drive (ออฟไลน์ → เข้าคิวส่งซ้ำอัตโนมัติ)
   let queued = false;
-  const q1 = await apiPostQueued({ action:'saveReading', ...record });
-  if (q1.queued) queued = true;
-  if (base64) {
-    const q2 = await apiPostQueued({ action:'uploadReceipt', image:base64, fileName:fname, folderId:state.settings.folderId||FOLDER_ID });
-    if (q2.queued) queued = true;
+  if (!state.demoMode) {
+    showLoading('กำลังบันทึก...');
+    const q1 = await apiPostQueued({ action:'saveReading', ...record });
+    if (q1.queued) queued = true;
+    if (base64) {
+      const q2 = await apiPostQueued({ action:'uploadReceipt', image:base64, fileName:fname, folderId:state.settings.folderId||FOLDER_ID });
+      if (q2.queued) queued = true;
+    }
+    hideLoading();
   }
-  hideLoading();
 
-  showToast(queued
-    ? '📶 ไม่มีสัญญาณ — บันทึกในเครื่องแล้ว จะส่งให้อัตโนมัติเมื่อมีเน็ต'
-    : '✅ บันทึกลง Sheets/Drive เรียบร้อย!');
-  btn.textContent='✅ บันทึกแล้ว';
+  // อยู่หน้าใบเสร็จต่อ — ยังพิมพ์/แชร์ได้ แล้วค่อยกด "เสร็จ" ไปบ้านถัดไป
+  if (btn) { btn.textContent='✅ บันทึกแล้ว'; btn.disabled=true; }
+  const doneBtn=document.getElementById('btn-receipt-done');
+  if (doneBtn) { doneBtn.textContent='✅ เสร็จ — บ้านถัดไป'; doneBtn.classList.remove('btn-outline'); doneBtn.classList.add('btn-success'); }
+  state._justSaved = true;
+  showToast(state.demoMode ? '✅ บันทึกแล้ว (Demo) — กดพิมพ์/แชร์ได้เลย'
+    : (queued ? '📶 ไม่มีสัญญาณ — บันทึกในเครื่องแล้ว จะส่งให้อัตโนมัติเมื่อมีเน็ต'
+              : '✅ บันทึกเรียบร้อย! กดพิมพ์หรือแชร์ได้เลย'));
   state.saving=false;
-  setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 800);
+}
+
+// ปิดใบเสร็จ — ถ้าเพิ่งบันทึกเสร็จ ให้กลับไปหน้า "บ้าน" เพื่อทำบ้านถัดไป
+function onReceiptDone() {
+  closeModal('modal-receipt');
+  if (state._justSaved) { state._justSaved = false; switchView('home'); }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2080,13 +2032,13 @@ function reprintBill(id) {
   const waterCost = (b.units || 0) * unitPrice;
   const isMin = waterCost < s.minCharge;
   const d = { currentReading:b.currentReading, units:b.units, waterCost, serviceFee: isMin ? s.minCharge : 0, total:b.amount };
-  state.currentReceipt = {
+  const r = {
     billNo: b.id,
     dateStr: formatLastDate(b.savedAt || b.readDate),
     monthStr: formatLastDate(b.readDate),
     h, d, s, w
   };
-  printReceipt();
+  showReceipt(r, { allowSave:false });   // เปิดใบเสร็จเดิม แล้วกด พิมพ์/แชร์ ได้
 }
 
 // ════════════════════════════════════════════════════════════
