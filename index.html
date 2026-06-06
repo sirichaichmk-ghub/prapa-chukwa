@@ -265,6 +265,60 @@
     #print-area .p-row { display:flex; justify-content:space-between; margin:0.8mm 0; font-size:8pt; }
     #print-area .p-divider { border:none; border-top:1px dashed #000; margin:1.5mm 0; }
     #print-area img { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+    /* ── โหมดตัวอักษรใหญ่ (สำหรับผู้สูงวัย) ── */
+    body.large-text .header-title h1 { font-size:19px; }
+    body.large-text .header-title p { font-size:13px; }
+    body.large-text .nav-btn { font-size:12px; }
+    body.large-text .nav-btn .nav-icon { font-size:26px; }
+    body.large-text .house-name, body.large-text .bill-house, body.large-text .rank-name { font-size:19px; }
+    body.large-text .house-meta { font-size:15px; }
+    body.large-text .house-well-tag, body.large-text .house-card .house-info span,
+    body.large-text .bill-detail, body.large-text .bill-detail span, body.large-text .rank-addr,
+    body.large-text .expense-cat, body.large-text .info-label, body.large-text .settings-label,
+    body.large-text .well-bar-header { font-size:15px !important; }
+    body.large-text .house-badge, body.large-text .filter-chip, body.large-text .month-chip,
+    body.large-text .well-select-chip { font-size:15px; }
+    body.large-text .house-avatar { width:60px; height:60px; font-size:24px; }
+    body.large-text .btn { font-size:19px; padding:18px; }
+    body.large-text .big-input { font-size:32px; }
+    body.large-text .info-value, body.large-text .bill-amount, body.large-text .expense-amount { font-size:17px; }
+    body.large-text .info-value.big { font-size:24px; }
+    body.large-text .settings-input { font-size:16px; padding:14px; }
+    body.large-text .modal-title { font-size:22px; }
+    body.large-text .modal-subtitle { font-size:15px; }
+    body.large-text .dash-hero-amount { font-size:42px; }
+    body.large-text .dash-hero-label, body.large-text .dash-hero-sub { font-size:14px; }
+    body.large-text .stat-card .num, body.large-text .dash-stat .n { font-size:26px; }
+    body.large-text .stat-card .lbl, body.large-text .dash-stat .l { font-size:12px; }
+    body.large-text .section-title, body.large-text .dash-section h3, body.large-text .settings-section h3 { font-size:15px; }
+    body.large-text .rank-units { font-size:17px; }
+
+    /* ── ปรับฐาน: ขยายจุดที่เล็กเกินไปเล็กน้อย (ใช้เสมอ) ── */
+    .house-meta { font-size:13px; }
+    .house-well-tag { font-size:12.5px; }
+    .bill-detail, .bill-detail span { font-size:12.5px; }
+    .rank-addr { font-size:12.5px; }
+    .house-badge { font-size:12px; }
+
+    /* ── แถบเตือน/ยืนยัน ── */
+    .calc-warn { display:none; background:rgba(255,255,255,0.18); border-radius:9px; padding:8px 11px; margin-top:10px; font-size:13px; font-weight:600; }
+    .calc-warn.show { display:block; }
+    .confirm-summary { background:var(--bg); border-radius:14px; padding:18px; text-align:center; margin-bottom:16px; }
+    .confirm-summary .cs-house { font-size:15px; color:var(--text-muted); }
+    .confirm-summary .cs-units { font-size:34px; font-weight:800; color:var(--primary); margin:8px 0 2px; }
+    .confirm-summary .cs-amount { font-size:30px; font-weight:800; margin-bottom:4px; }
+    .confirm-summary .cs-ask { font-size:15px; color:var(--text-muted); }
+    .bill-actions { display:flex; gap:7px; margin-top:11px; }
+    .bill-act-btn { flex:1; padding:10px 6px; border:none; border-radius:10px; font-size:13.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+    .bill-act-btn:active { transform:scale(.97); }
+    .bill-act-edit { background:#E3F2FD; color:#1565C0; }
+    .bill-act-print { background:#E8F5E9; color:#2E7D32; }
+    .bill-act-del { background:#FFEBEE; color:#C62828; }
+    body.large-text .bill-act-btn { font-size:16px; padding:13px 6px; }
+    .warn-note { display:none; background:#FFF3E0; color:#E65100; border-radius:9px; padding:9px 11px; margin:4px 0 12px; font-size:13px; font-weight:600; }
+    .warn-note.show { display:block; }
+    body.large-text .warn-note { font-size:15px; }
   </style>
 </head>
 <body>
@@ -294,7 +348,10 @@
       <div class="icon">💧</div>
       <div><h1>ประปาหมู่บ้านชุกหว้า</h1><p id="header-month">กำลังโหลด...</p></div>
     </div>
-    <button class="header-btn" onclick="refreshData()">🔄</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="pending-badge" onclick="flushQueue()" style="display:none;align-items:center;background:rgba(255,255,255,0.22);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:50px;cursor:pointer"></span>
+      <button class="header-btn" onclick="refreshData()">🔄</button>
+    </div>
   </div>
 
   <div class="main">
@@ -327,16 +384,6 @@
         <div class="chart-wrap" id="dash-chart-wrap">
           <div class="empty-state" style="padding:20px"><p>ยังไม่มีข้อมูล</p></div>
         </div>
-      </div>
-
-      <!-- Top / bottom users -->
-      <div class="dash-section">
-        <h3>🏆 ใช้น้ำมากสุด (เดือนนี้)</h3>
-        <div id="dash-top-users"><div class="empty-state" style="padding:16px"><p>ยังไม่มีข้อมูล</p></div></div>
-      </div>
-      <div class="dash-section">
-        <h3>💤 ใช้น้ำน้อยสุด (เดือนนี้)</h3>
-        <div id="dash-bot-users"><div class="empty-state" style="padding:16px"><p>ยังไม่มีข้อมูล</p></div></div>
       </div>
 
       <!-- Net income -->
@@ -392,6 +439,13 @@
 
     <!-- ══ SETTINGS ══ -->
     <div class="view" id="view-settings">
+      <div class="settings-section">
+        <h3>👓 การแสดงผล</h3>
+        <div class="settings-label" style="margin-bottom:8px">ปรับให้อ่านง่ายขึ้นสำหรับผู้สูงวัย</div>
+        <button id="btn-large-text" class="btn btn-outline" onclick="toggleLargeText()">🔠 เปิดโหมดตัวอักษรใหญ่</button>
+        <div class="settings-label" style="margin:14px 0 8px">เมื่อกดบันทึก ให้เก็บรูปใบเสร็จลงเครื่องอัตโนมัติ</div>
+        <button id="btn-auto-img" class="btn btn-outline" onclick="toggleAutoSaveImage()">📸 บันทึกรูปลงเครื่องอัตโนมัติ: เปิด</button>
+      </div>
       <div class="settings-section">
         <h3>⚙️ ระบบ</h3>
         <div class="settings-row"><div class="settings-label">📎 Apps Script URL</div><input type="url" id="cfg-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." /></div>
@@ -475,6 +529,7 @@
         <span style="font-size:15px;font-weight:700">ยอดรวม</span>
         <span class="calc-total" id="calc-total">-</span>
       </div>
+      <div class="calc-warn" id="calc-warn"></div>
     </div>
     <div class="btn-row" style="margin-bottom:9px">
       <button class="btn btn-outline" onclick="closeModal('modal-reading')" style="flex:1">ยกเลิก</button>
@@ -494,12 +549,31 @@
     </div>
     <div class="receipt-preview" id="receipt-display"></div>
     <div class="btn-row" style="margin-bottom:9px">
+      <button class="btn btn-success" onclick="confirmSaveBill()" style="flex:1" id="btn-save">💾 บันทึก</button>
       <button class="btn btn-primary" onclick="printReceipt()" style="flex:1">🖨️ พิมพ์</button>
-      <button class="btn btn-success" onclick="saveToSheetAndDrive()" style="flex:1" id="btn-save">💾 บันทึก</button>
     </div>
     <div class="btn-row" style="margin-bottom:9px">
-      <button class="btn btn-outline" onclick="saveReceiptImage()" style="flex:1" id="btn-img">📸 บันทึกรูป Drive</button>
+      <button class="btn" id="btn-share" onclick="shareReceipt()" style="flex:1;background:linear-gradient(135deg,#7B1FA2 0%,#9C27B0 100%);color:#fff;box-shadow:0 4px 14px rgba(123,31,162,.3)">📤 แชร์ / ส่งไลน์</button>
       <button class="btn btn-outline" onclick="closeModal('modal-receipt')" style="flex:1">← กลับ</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRM SAVE -->
+<div class="modal-overlay" id="modal-confirm-save">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">ยืนยันการบันทึก</div>
+    <div class="modal-subtitle">โปรดตรวจดูความถูกต้องก่อนบันทึก</div>
+    <div class="confirm-summary">
+      <div class="cs-house" id="confirm-house">-</div>
+      <div class="cs-units" id="confirm-units">-</div>
+      <div class="cs-amount" id="confirm-amount">-</div>
+      <div class="cs-ask">ข้อมูลถูกต้องไหมครับ?</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-save')" style="flex:1">← แก้ไข</button>
+      <button class="btn btn-success" id="btn-confirm-save" onclick="doSaveBill()" style="flex:2">✅ บันทึก</button>
     </div>
   </div>
 </div>
@@ -571,6 +645,34 @@
   </div>
 </div>
 
+<!-- MODAL: EDIT BILL -->
+<div class="modal-overlay" id="modal-edit-bill">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div><div class="modal-title">✏️ แก้ไขบิล</div><div class="modal-subtitle" id="edit-bill-house">-</div></div>
+      <button onclick="closeModal('modal-edit-bill')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">✕</button>
+    </div>
+    <div class="input-group">
+      <label class="input-label">📟 เลขมิเตอร์ครั้งก่อน</label>
+      <input type="number" id="edit-prev" class="big-input" inputmode="numeric" oninput="onEditBillChange()" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">📟 เลขมิเตอร์ครั้งนี้</label>
+      <input type="number" id="edit-cur" class="big-input" inputmode="numeric" oninput="onEditBillChange()" />
+    </div>
+    <div class="info-box">
+      <div class="info-row"><span class="info-label">หน่วยที่ใช้</span><span class="info-value" id="edit-units">-</span></div>
+      <div class="info-row"><span class="info-label">ยอดเงิน</span><span class="info-value big" id="edit-amount">-</span></div>
+    </div>
+    <div class="warn-note" id="edit-warn"></div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-bill')" style="flex:1">ยกเลิก</button>
+      <button class="btn btn-success" id="btn-edit-save" onclick="saveEditBill()" style="flex:2">💾 บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
 <!-- PRINT AREA -->
 <div id="print-area"></div>
 <div id="qr-tmp" style="position:absolute;visibility:hidden;top:-9999px"></div>
@@ -600,11 +702,11 @@ const state = {
   settings: {
     villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8, minCharge:30, minUnits:10,
     scriptUrl:'', folderId:FOLDER_ID, sheetId:SHEET_ID, promptpayId:'',
-    paperSize:'80mm'
+    paperSize:'80mm', largeText:false, autoSaveImage:true
   },
   selectedHouse: null, readingData: null, selectedWellId: null,
   currentMonth:'', selectedMonth:'', wellFilter:'all',
-  demoMode: false, currentReceipt: null
+  demoMode: false, currentReceipt: null, saving: false, queue: []
 };
 const STORAGE_KEY = 'pwa_prapa_chukwa_v2';
 
@@ -743,6 +845,7 @@ function getPromptPayQRDataUrl(size) {
 // ════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
+  applyLargeText();
   setCurrentMonth();
   if (!state.settings.scriptUrl) {
     document.getElementById('setup-screen').style.display = 'flex';
@@ -768,6 +871,7 @@ function loadFromStorage() {
       if (s.bills)    state.bills    = s.bills;
       if (s.expenses) state.expenses = s.expenses;
       if (s.wells && s.wells.length) state.wells = s.wells;
+      if (s.queue) state.queue = s.queue;
     }
   } catch(e) {}
 }
@@ -776,9 +880,47 @@ function saveToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       settings: state.settings, houses: state.houses,
-      bills: state.bills, expenses: state.expenses, wells: state.wells
+      bills: state.bills, expenses: state.expenses, wells: state.wells,
+      queue: state.queue
     }));
   } catch(e) {}
+}
+
+// ── โหมดตัวอักษรใหญ่ (ผู้สูงวัย) ──
+function applyLargeText() {
+  document.body.classList.toggle('large-text', !!state.settings.largeText);
+  const btn = document.getElementById('btn-large-text');
+  if (btn) {
+    if (state.settings.largeText) {
+      btn.textContent = '🔠 ปิดโหมดตัวอักษรใหญ่';
+      btn.classList.remove('btn-outline'); btn.classList.add('btn-primary');
+    } else {
+      btn.textContent = '🔠 เปิดโหมดตัวอักษรใหญ่';
+      btn.classList.add('btn-outline'); btn.classList.remove('btn-primary');
+    }
+  }
+}
+function toggleLargeText() {
+  state.settings.largeText = !state.settings.largeText;
+  saveToStorage();
+  applyLargeText();
+  showToast(state.settings.largeText ? '🔠 เปิดโหมดตัวอักษรใหญ่แล้ว' : 'ปิดโหมดตัวอักษรใหญ่แล้ว');
+}
+
+// ── เก็บรูปใบเสร็จลงเครื่องอัตโนมัติ (เปิด/ปิด) ──
+function applyAutoImgBtn() {
+  const btn=document.getElementById('btn-auto-img');
+  if(!btn) return;
+  const on = state.settings.autoSaveImage !== false;
+  btn.textContent = on ? '📸 บันทึกรูปลงเครื่องอัตโนมัติ: เปิด' : '📸 บันทึกรูปลงเครื่องอัตโนมัติ: ปิด';
+  btn.classList.toggle('btn-primary', on);
+  btn.classList.toggle('btn-outline', !on);
+}
+function toggleAutoSaveImage() {
+  state.settings.autoSaveImage = state.settings.autoSaveImage === false ? true : false;
+  saveToStorage();
+  applyAutoImgBtn();
+  showToast(state.settings.autoSaveImage ? '📸 จะบันทึกรูปลงเครื่องอัตโนมัติ' : 'ปิดการบันทึกรูปอัตโนมัติ');
 }
 
 // ════════════════════════════════════════════════════════════
@@ -840,6 +982,13 @@ async function initApp() {
   buildWellFilterChips();
   buildMonthSelector();
   renderWellSelectRow();
+  setPendingBadge();
+  if (!window._netHooks) {
+    window._netHooks = true;
+    window.addEventListener('online', () => flushQueue());
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) flushQueue({ silent:true }); });
+    setInterval(() => flushQueue({ silent:true }), 30000);
+  }
   await refreshData();
 }
 
@@ -857,6 +1006,8 @@ async function refreshData() {
   } catch(e) { showToast('⚠️ ใช้ข้อมูลที่บันทึกไว้'); }
   finally { hideLoading(); }
   renderAll();
+  setPendingBadge();
+  flushQueue({ silent:true });
 }
 
 function renderAll() {
@@ -887,6 +1038,61 @@ async function apiPost(data) {
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
+}
+
+// ════════════════════════════════════════════════════════════
+//  คิวออฟไลน์ — ถ้าไม่มีสัญญาณ เก็บไว้ แล้วส่งซ้ำอัตโนมัติเมื่อมีเน็ต
+// ════════════════════════════════════════════════════════════
+function setPendingBadge() {
+  const el = document.getElementById('pending-badge');
+  if (!el) return;
+  const n = (state.queue || []).length;
+  if (n > 0) { el.style.display = 'flex'; el.textContent = '⏳ รอส่ง ' + n; }
+  else { el.style.display = 'none'; }
+}
+
+function enqueue(data) {
+  state.queue = state.queue || [];
+  state.queue.push({ ts: Date.now(), data });
+  saveToStorage();
+  setPendingBadge();
+}
+
+// ส่งขึ้น Sheets/Drive; ถ้าออฟไลน์หรือล้มเหลว → เข้าคิวส่งซ้ำภายหลัง
+async function apiPostQueued(data) {
+  if (state.demoMode || !state.settings.scriptUrl) return { queued:false, demo:true };
+  try {
+    const res = await apiPost(data);
+    return { ok:true, res };
+  } catch(e) {
+    enqueue(data);
+    return { queued:true };
+  }
+}
+
+let _flushing = false;
+async function flushQueue(opts) {
+  if (_flushing) return;
+  if (state.demoMode || !state.settings.scriptUrl) return;
+  if (!state.queue || !state.queue.length) { setPendingBadge(); return; }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  _flushing = true;
+  let sent = 0;
+  try {
+    while (state.queue.length) {
+      const item = state.queue[0];
+      try {
+        await apiPost(item.data);
+        state.queue.shift();
+        sent++;
+        saveToStorage();
+        setPendingBadge();
+      } catch(e) {
+        break;  // ยังส่งไม่ได้ — รอรอบหน้า
+      }
+    }
+  } finally { _flushing = false; }
+  if (sent > 0 && (!opts || !opts.silent)) showToast('☁️ ส่งข้อมูลที่ค้างขึ้นแล้ว ' + sent + ' รายการ');
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1054,11 +1260,6 @@ function renderDashboard() {
 
   // Monthly chart (last 6 months)
   renderMonthlyChart();
-
-  // Top / bottom
-  const sorted = [...monthBills].sort((a,b) => (b.units||0) - (a.units||0));
-  renderRankList('dash-top-users', sorted.slice(0,5), true);
-  renderRankList('dash-bot-users', sorted.slice(-5).reverse(), false);
 
   // Expenses this month
   const monthExp = state.expenses.filter(e => e.month && e.month.startsWith(ym));
@@ -1325,6 +1526,18 @@ function onReadingChange() {
   document.getElementById('calc-total').textContent = total.toLocaleString() + ' บาท';
   document.getElementById('calc-box').classList.add('visible');
   document.getElementById('btn-view-receipt').disabled = false;
+
+  // เตือนเมื่อหน่วยที่ใช้สูงผิดปกติ (อาจจดเลขมิเตอร์ผิดหลัก)
+  const warnEl = document.getElementById('calc-warn');
+  if (warnEl) {
+    if (units > 500) {
+      warnEl.textContent = '\u26a0\ufe0f ใช้ ' + units.toLocaleString() + ' หน่วย สูงผิดปกติ — โปรดตรวจเลขมิเตอร์อีกครั้ง';
+      warnEl.classList.add('show');
+    } else {
+      warnEl.classList.remove('show');
+    }
+  }
+
   state.readingData = { units, waterCost, serviceFee: isMin ? s.minCharge : 0, total, currentReading:cur };
 }
 
@@ -1520,6 +1733,49 @@ function fallbackDownload(blob, fname) {
   showToast('✅ ดาวน์โหลดรูปแล้ว');
 }
 
+// แชร์ใบเสร็จเป็นรูปภาพ (เข้า LINE หรือแอปอื่น) ผ่าน Web Share API
+async function shareReceipt() {
+  const el  = document.getElementById('receipt-display');
+  const btn = document.getElementById('btn-share');
+  if (!el || !window.html2canvas) { showToast('⏳ ยังเตรียมรูปไม่เสร็จ — ลองอีกครั้ง'); return; }
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังเตรียมรูป...'; }
+  try {
+    const canvas = await html2canvas(el, { scale:2.5, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
+    const r = state.currentReceipt;
+    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (!blob) { showToast('⚠️ สร้างรูปไม่สำเร็จ'); return; }
+    const file = new File([blob], fname, { type:'image/png' });
+    const shareText = `ใบเสร็จค่าน้ำประปา ${r?.h?.name||''}` + (r?.d?.total ? ` (${r.d.total.toLocaleString()} บาท)` : '');
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      try {
+        await navigator.share({ files:[file], title:'ใบเสร็จค่าน้ำ', text: shareText.trim() });
+      } catch(e) { /* ผู้ใช้กดยกเลิกการแชร์ — เงียบ */ }
+    } else {
+      // เปิดบนคอมหรือเบราว์เซอร์ที่ไม่รองรับแชร์ไฟล์ → ดาวน์โหลดรูปแทน
+      fallbackDownload(blob, fname);
+      showToast('💾 บันทึกรูปแล้ว — เปิด LINE แล้วแนบรูปนี้ส่งได้เลย');
+    }
+  } catch(e) {
+    showToast('⚠️ แชร์ไม่สำเร็จ');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+// บันทึกรูปใบเสร็จลงเครื่อง (โทรศัพท์) อัตโนมัติเมื่อกดบันทึก
+async function autoDownloadReceiptImage() {
+  const el = document.getElementById('receipt-display');
+  if (!el || !window.html2canvas) { showToast('⏳ ยังเตรียมรูปไม่เสร็จ — กดปุ่ม "บันทึกรูป" เองได้'); return; }
+  try {
+    const canvas = await html2canvas(el, { scale:2.5, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
+    const r = state.currentReceipt;
+    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
+    await new Promise(res => canvas.toBlob(b => { if (b) fallbackDownload(b, fname); res(); }, 'image/png'));
+  } catch(e) { /* เงียบ — ผู้ใช้ยังกดปุ่มบันทึกรูปเองได้ */ }
+}
+
 // อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติแบบเงียบ (ไม่รบกวนผู้ใช้)
 async function autoUploadReceiptImage() {
   const el = document.getElementById('receipt-display');
@@ -1533,9 +1789,25 @@ async function autoUploadReceiptImage() {
   } catch(e) { /* เงียบ — ผู้ใช้ยังกดปุ่มบันทึกรูปเองได้ */ }
 }
 
-async function saveToSheetAndDrive() {
+function confirmSaveBill() {
   const r=state.currentReceipt; if (!r) return;
+  const {h,d}=r;
+  document.getElementById('confirm-house').textContent =
+    (h.address && h.address !== '-') ? ('บ้าน ' + h.address + ' · ' + h.name) : h.name;
+  document.getElementById('confirm-units').textContent = (d.units||0).toLocaleString() + ' หน่วย';
+  document.getElementById('confirm-amount').textContent = (d.total||0).toLocaleString() + ' บาท';
+  const cb=document.getElementById('btn-confirm-save');
+  if (cb) { cb.disabled=false; cb.textContent='✅ บันทึก'; }
+  openModal('modal-confirm-save');
+}
+
+async function doSaveBill() {
+  if (state.saving) return;            // กันกดบันทึกซ้ำ
+  state.saving = true;
+  const r=state.currentReceipt; if (!r) { state.saving=false; return; }
   const {h,d,s,billNo,w}=r;
+  const cbtn=document.getElementById('btn-confirm-save');
+  if (cbtn) { cbtn.disabled=true; cbtn.textContent='⏳ กำลังบันทึก...'; }
   const btn=document.getElementById('btn-save');
   btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...';
 
@@ -1551,23 +1823,46 @@ async function saveToSheetAndDrive() {
   const hi=state.houses.findIndex(hh=>hh.id===h.id);
   if (hi>=0) { state.houses[hi].lastReading=d.currentReading; state.houses[hi].lastDate=new Date().toISOString().split('T')[0]; state.houses[hi].wellId=state.selectedWellId||state.houses[hi].wellId; }
   saveToStorage(); renderAll();
+  closeModal('modal-confirm-save');
+
+  // เตรียมรูปใบเสร็จครั้งเดียว ใช้ทั้งเซฟลงเครื่องและอัปขึ้น Drive
+  const fname = `ใบเสร็จ_${h.address||''}_${r.monthStr||''}.png`.replace(/\s/g,'_').replace(/\//g,'-');
+  let base64 = null;
+  const el = document.getElementById('receipt-display');
+  if (el && window.html2canvas) {
+    try {
+      const canvas = await html2canvas(el, { scale:2.5, useCORS:true, backgroundColor:'#ffffff', logging:false, allowTaint:true });
+      if (state.settings.autoSaveImage !== false) {
+        await new Promise(res => canvas.toBlob(b => { if (b) fallbackDownload(b, fname); res(); }, 'image/png'));
+      }
+      base64 = canvas.toDataURL('image/png').split(',')[1];
+    } catch(e) { /* ข้ามรูปถ้าสร้างไม่ได้ */ }
+  }
 
   if (state.demoMode) {
+    state.saving=false;
     showToast('✅ บันทึกแล้ว (Demo)'); btn.textContent='✅ บันทึกแล้ว';
     setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 700);
     return;
   }
-  try {
-    showLoading('บันทึกลง Google Sheets...');
-    await apiPost({ action:'saveReading', ...record });
-    showToast('✅ บันทึกลง Sheets เรียบร้อย!');
-    btn.textContent='✅ บันทึกแล้ว';
-    autoUploadReceiptImage(); // อัปโหลดรูปใบเสร็จเข้า Drive อัตโนมัติ (เบื้องหลัง)
-    setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 800);
-  } catch(e) {
-    showToast('⚠️ บันทึกในเครื่องแล้ว (Sheets อาจยังไม่ได้รับ)');
-    btn.disabled=false; btn.textContent='🔄 ลองอีกครั้ง';
-  } finally { hideLoading(); }
+
+  // ส่งขึ้น Sheets + Drive ในปุ่มเดียว (ออฟไลน์ → เข้าคิวส่งซ้ำอัตโนมัติ)
+  showLoading('กำลังบันทึก...');
+  let queued = false;
+  const q1 = await apiPostQueued({ action:'saveReading', ...record });
+  if (q1.queued) queued = true;
+  if (base64) {
+    const q2 = await apiPostQueued({ action:'uploadReceipt', image:base64, fileName:fname, folderId:state.settings.folderId||FOLDER_ID });
+    if (q2.queued) queued = true;
+  }
+  hideLoading();
+
+  showToast(queued
+    ? '📶 ไม่มีสัญญาณ — บันทึกในเครื่องแล้ว จะส่งให้อัตโนมัติเมื่อมีเน็ต'
+    : '✅ บันทึกลง Sheets/Drive เรียบร้อย!');
+  btn.textContent='✅ บันทึกแล้ว';
+  state.saving=false;
+  setTimeout(() => { closeModal('modal-receipt'); switchView('dashboard'); }, 800);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1592,7 +1887,7 @@ async function markNoAccess() {
   saveToStorage(); renderAll();
   showToast('🚫 บันทึกแล้ว: ไม่มีการใช้น้ำเดือนนี้');
   if (!state.demoMode && state.settings.scriptUrl) {
-    try { await apiPost({ action:'saveReading', ...record }); } catch(e) {}
+    await apiPostQueued({ action:'saveReading', ...record });
   }
 }
 
@@ -1619,10 +1914,8 @@ async function addHouse() {
   const newHouse = { id:'H'+Date.now(), name, address, initialReading:initial, lastReading:initial, lastDate:'', wellId, wellName, note };
   state.houses.push(newHouse);
   saveToStorage(); renderAll(); closeModal('modal-add-house');
-  if (!state.demoMode && state.settings.scriptUrl) {
-    try { await apiPost({ action:'addHouse', name, address, initialReading:initial, wellId, wellName, note }); showToast('✅ เพิ่มบ้านสำเร็จ!'); }
-    catch(e) { showToast('✅ เพิ่มในเครื่องแล้ว'); }
-  } else { showToast('✅ เพิ่มบ้านสำเร็จ'); }
+  const addRes = await apiPostQueued({ action:'addHouse', name, address, initialReading:initial, wellId, wellName, note });
+  showToast(addRes.queued ? '📶 เพิ่มในเครื่องแล้ว จะส่งเมื่อมีเน็ต' : '✅ เพิ่มบ้านสำเร็จ!');
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1675,8 +1968,125 @@ function renderBills() {
         }
         <div class="bill-detail">วันที่: <span>${b.savedAt||b.readDate}</span></div>
       </div>
+      <div class="bill-actions">
+        <button class="bill-act-btn bill-act-edit" onclick="openEditBill('${b.id}')">✏️ แก้ไข</button>
+        ${isNA?'':`<button class="bill-act-btn bill-act-print" onclick="reprintBill('${b.id}')">🖨️ พิมพ์</button>`}
+        <button class="bill-act-btn bill-act-del" onclick="deleteBillEntry('${b.id}')">🗑 ลบ</button>
+      </div>
     </div>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  แก้ไข / พิมพ์ซ้ำ / ลบ บิล (หน้าประวัติ)
+// ════════════════════════════════════════════════════════════
+function recalcHouseLatest(houseId) {
+  const hi = state.houses.findIndex(h => h.id === houseId);
+  if (hi < 0) return;
+  const hb = state.bills.filter(b => b.houseId === houseId && b.readDate);
+  if (!hb.length) return;
+  hb.sort((a,b) => String(b.readDate).localeCompare(String(a.readDate)) || String(b.savedAt||'').localeCompare(String(a.savedAt||'')));
+  const latest = hb[0];
+  state.houses[hi].lastReading = latest.status === 'noaccess' ? (latest.prevReading||0) : (latest.currentReading||0);
+  state.houses[hi].lastDate    = latest.savedAt || latest.readDate || '';
+}
+
+function openEditBill(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  state._editBillId = id;
+  document.getElementById('edit-bill-house').textContent =
+    b.houseName + (b.address && b.address !== '-' ? (' · ' + b.address) : '');
+  document.getElementById('edit-prev').value = b.prevReading || 0;
+  document.getElementById('edit-cur').value  = b.currentReading || 0;
+  onEditBillChange();
+  openModal('modal-edit-bill');
+}
+
+function onEditBillChange() {
+  const prev = parseInt(document.getElementById('edit-prev').value) || 0;
+  const cur  = parseInt(document.getElementById('edit-cur').value) || 0;
+  const s = state.settings;
+  const units = cur > prev ? cur - prev : 0;
+  const raw   = units * s.unitPrice;
+  const total = units > 0 ? Math.max(s.minCharge, raw) : 0;
+  document.getElementById('edit-units').textContent  = units.toLocaleString() + ' หน่วย';
+  document.getElementById('edit-amount').textContent = total.toLocaleString() + ' บาท';
+  const warn = document.getElementById('edit-warn');
+  if (cur < prev) {
+    warn.textContent = '⚠️ เลขครั้งนี้ต่ำกว่าครั้งก่อน — โปรดตรวจอีกครั้ง';
+    warn.classList.add('show');
+  } else if (units > 500) {
+    warn.textContent = '⚠️ ใช้ ' + units.toLocaleString() + ' หน่วย สูงผิดปกติ — โปรดตรวจอีกครั้ง';
+    warn.classList.add('show');
+  } else {
+    warn.classList.remove('show');
+  }
+}
+
+async function saveEditBill() {
+  if (state.saving) return;
+  const id = state._editBillId;
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  const prev = parseInt(document.getElementById('edit-prev').value) || 0;
+  const cur  = parseInt(document.getElementById('edit-cur').value) || 0;
+  if (cur < prev) { showToast('⚠️ เลขครั้งนี้ต้องไม่น้อยกว่าครั้งก่อน'); return; }
+  state.saving = true;
+  const btn = document.getElementById('btn-edit-save');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+  const s = state.settings;
+  const units = cur > prev ? cur - prev : 0;
+  const total = units > 0 ? Math.max(s.minCharge, units * s.unitPrice) : 0;
+  b.prevReading = prev; b.currentReading = cur; b.units = units;
+  b.unitPrice = s.unitPrice; b.amount = total;
+  b.status = units > 0 ? '' : 'noaccess';
+  recalcHouseLatest(b.houseId);
+  saveToStorage(); renderBills(); renderDashboard();
+  if (typeof renderExpenseList === 'function') renderExpenseList();
+  if (!state.demoMode && state.settings.scriptUrl) {
+    const e1 = await apiPostQueued({ action:'deleteBill', id:b.id });
+    const e2 = await apiPostQueued({ action:'saveReading', ...b });
+    showToast((e1.queued||e2.queued) ? '📶 แก้ในเครื่องแล้ว จะส่งเมื่อมีเน็ต' : '✅ แก้ไขบิลแล้ว');
+  } else {
+    showToast('✅ แก้ไขบิลแล้ว');
+  }
+  btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข';
+  state.saving = false;
+  closeModal('modal-edit-bill');
+}
+
+async function deleteBillEntry(id) {
+  if (!confirm('ลบบิลนี้?\nจะลบออกจากประวัติและ Google Sheets')) return;
+  const b = state.bills.find(x => x.id === id);
+  state.bills = state.bills.filter(x => x.id !== id);
+  if (b) recalcHouseLatest(b.houseId);
+  saveToStorage(); renderBills(); renderDashboard();
+  if (typeof renderExpenseList === 'function') renderExpenseList();
+  showToast('🗑 ลบบิลแล้ว');
+  if (!state.demoMode && state.settings.scriptUrl) {
+    await apiPostQueued({ action:'deleteBill', id });
+  }
+}
+
+function reprintBill(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  if (b.status === 'noaccess') { showToast('บิลนี้ไม่มีการใช้น้ำ — ไม่มีใบเสร็จให้พิมพ์'); return; }
+  const s = state.settings;
+  const w = wellById(b.wellId);
+  const h = { address:b.address, name:b.houseName, lastReading:b.prevReading };
+  const unitPrice = b.unitPrice || s.unitPrice;
+  const waterCost = (b.units || 0) * unitPrice;
+  const isMin = waterCost < s.minCharge;
+  const d = { currentReading:b.currentReading, units:b.units, waterCost, serviceFee: isMin ? s.minCharge : 0, total:b.amount };
+  state.currentReceipt = {
+    billNo: b.id,
+    dateStr: formatLastDate(b.savedAt || b.readDate),
+    monthStr: formatLastDate(b.readDate),
+    h, d, s, w
+  };
+  printReceipt();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1694,6 +2104,8 @@ function populateSettings() {
   const paperSel = document.getElementById('cfg-paper');
   if (paperSel) paperSel.value = s.paperSize || '58mm';
   refreshPromptPayPreview();
+  applyLargeText();
+  applyAutoImgBtn();
   // Live preview เมื่อพิมพ์
   document.getElementById('cfg-promptpay').addEventListener('input', refreshPromptPayPreview);
 }
@@ -1776,9 +2188,7 @@ function saveExpense() {
   showToast(`✅ บันทึกแล้ว: ${desc} ${amount.toLocaleString()} บาท`);
 
   // Sync to sheets
-  if (!state.demoMode && state.settings.scriptUrl) {
-    apiPost({ action: 'saveExpense', ...record }).catch(() => {});
-  }
+  apiPostQueued({ action: 'saveExpense', ...record });
 }
 
 function deleteExpense(id) {
