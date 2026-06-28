@@ -445,8 +445,6 @@
         <div class="settings-row"><div class="settings-label">📎 Apps Script URL</div><input type="url" id="cfg-url" class="settings-input" placeholder="https://script.google.com/macros/s/..." /></div>
         <div class="settings-row"><div class="settings-label">🏘️ ชื่อหมู่บ้าน</div><input type="text" id="cfg-village" class="settings-input" /></div>
         <div class="settings-row"><div class="settings-label">💧 ราคาต่อหน่วย (บาท)</div><input type="number" id="cfg-unit-price" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">📦 ค่าบริการขั้นต่ำ (บาท)</div><input type="number" id="cfg-min-charge" class="settings-input" /></div>
-        <div class="settings-row"><div class="settings-label">📊 หน่วยสำหรับค่าขั้นต่ำ</div><input type="number" id="cfg-min-units" class="settings-input" /></div>
         <div class="settings-row"><div class="settings-label">📁 Drive Folder ID (ใบเสร็จ)</div><input type="text" id="cfg-folder-id" class="settings-input" placeholder="ID จาก URL โฟลเดอร์ Drive" /></div>
         <div class="settings-row">
           <div class="settings-label">📲 PromptPay (เบอร์โทร / เลขบัตรประชาชน)</div>
@@ -518,7 +516,6 @@
     <div class="calc-box" id="calc-box" style="background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary-light) 100%)">
       <div class="calc-row"><span>หน่วยที่ใช้</span><span id="calc-units">-</span></div>
       <div class="calc-row"><span id="calc-rate-label">ค่าน้ำ</span><span id="calc-water">-</span></div>
-      <div class="calc-row"><span>ค่าบริการ</span><span id="calc-service">-</span></div>
       <div class="calc-row" style="padding-top:8px;margin-top:4px;border-top:1px solid rgba(255,255,255,.3)">
         <span style="font-size:15px;font-weight:700">ยอดรวม</span>
         <span class="calc-total" id="calc-total">-</span>
@@ -675,15 +672,23 @@ const state = {
     { id:'W3', name:'บ่อที่ 3', color:'#E64A19' },
   ],
   settings: {
-    villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8, minCharge:30, minUnits:10,
+    villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8,
     scriptUrl:'', folderId:FOLDER_ID, sheetId:SHEET_ID, promptpayId:'',
-    paperSize:'80mm', largeText:false, autoSaveImage:true
+    paperSize:'80mm', largeText:false, autoSaveImage:true,
+    wellOverrides:{}   // { wellId: {name,color} } — ชื่อ/สีบ่อที่ผู้ใช้แก้เอง (กันข้อมูลชีตเขียนทับ)
   },
   selectedHouse: null, readingData: null, selectedWellId: null,
   currentMonth:'', selectedMonth:'', wellFilter:'all',
   demoMode: false, currentReceipt: null, saving: false, queue: []
 };
 const STORAGE_KEY = 'pwa_prapa_chukwa_v2';
+
+// ── กันอักขระพิเศษ (", <, >, &) ในชื่อ/หมายเหตุ ไม่ให้ทำ layout พังหรือยิงโค้ด ──
+function escapeHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // ════════════════════════════════════════════════════════════
 //  UI UTILITIES (navigation / modals / toast / loading)
@@ -787,32 +792,6 @@ function buildPromptPayPayload(idOrPhone) {
   const payload = '000201' + '010212' + merchantAcct + '5303764' + '5802TH' + '6304';
   const checksum = crc16(payload).toString(16).toUpperCase().padStart(4, '0');
   return payload + checksum;
-}
-
-/** สร้าง QR data URL จาก text (ใช้ QRCode.js จาก CDN) */
-function generateQRDataUrl(text, size) {
-  const tmp = document.getElementById('qr-tmp');
-  tmp.innerHTML = '';
-  try {
-    new QRCode(tmp, {
-      text, width: size || 200, height: size || 200,
-      colorDark: '#000000', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-    const canvas = tmp.querySelector('canvas');
-    if (canvas) return canvas.toDataURL('image/png');
-    const img = tmp.querySelector('img');
-    return img ? img.src : null;
-  } catch(e) { return null; }
-}
-
-/** สร้าง QR PromptPay พร้อม data URL, คืน null ถ้าไม่มีการตั้งค่า */
-function getPromptPayQRDataUrl(size) {
-  const pid = state.settings.promptpayId;
-  if (!pid) return null;
-  const payload = buildPromptPayPayload(pid);
-  if (!payload) return null;
-  return generateQRDataUrl(payload, size);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -960,29 +939,44 @@ async function initApp() {
   setPendingBadge();
   if (!window._netHooks) {
     window._netHooks = true;
-    window.addEventListener('online', () => flushQueue());
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) flushQueue({ silent:true }); });
-    setInterval(() => flushQueue({ silent:true }), 30000);
+    // กลับมาออนไลน์ / สลับแอปกลับมา → ส่งคิว + ดึงข้อมูลล่าสุดมาอัปเดตจอ (เงียบ ไม่มี overlay)
+    window.addEventListener('online', () => refreshData({ silent:true }));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshData({ silent:true }); });
+    // ทุก 30 วิ ถ้ามีของค้างในคิว → ส่งและอัปเดตจอ (ถ้าไม่มีของค้าง ไม่ยิงเซิร์ฟเวอร์ ประหยัดโควต้า)
+    setInterval(() => { if (state.queue && state.queue.length) refreshData({ silent:true }); }, 30000);
   }
   await refreshData();
 }
 
-async function refreshData() {
+async function refreshData(opts) {
+  opts = opts || {};
   if (state.demoMode) { renderAll(); return; }
-  showLoading('กำลังโหลดจาก Google Sheets...');
+
+  // ① ส่งข้อมูลที่ค้างในคิวให้หมดก่อน — กันไม่ให้การดึงข้อมูลใหม่มาทับของที่ยังไม่ได้ส่ง
+  await flushQueue({ silent:true });
+
+  // ② ถ้ายังมีคิวค้าง = ออฟไลน์/ส่งไม่สำเร็จ → ห้ามดึงมาทับ ใช้ข้อมูลในเครื่องต่อ (กันบิลที่เพิ่งจดหายจากจอ)
+  if (state.queue && state.queue.length) {
+    renderAll(); setPendingBadge();
+    if (!opts.silent) showToast('📶 ยังส่งข้อมูลที่ค้างไม่ได้ — ใช้ข้อมูลในเครื่องไปก่อน');
+    return;
+  }
+
+  // ③ คิวว่างแล้ว ค่อยดึงข้อมูลล่าสุดจากชีตมาทับได้อย่างปลอดภัย
+  if (!opts.silent) showLoading('กำลังโหลดจาก Google Sheets...');
   try {
-    const [r1, r2] = await Promise.all([apiGet('getHouses'), apiGet('getBills')]);
-    if (r1.houses) state.houses = r1.houses;
-    if (r2.bills)  state.bills  = r2.bills;
+    const r = await apiGet('getAll');
+    if (r.houses)   state.houses   = r.houses;
+    if (r.bills)    state.bills    = r.bills;
+    if (r.expenses) state.expenses = r.expenses;
     rebuildWellsFromHouses(); // ← สร้าง wells จากชื่อบ่อใน Sheet อัตโนมัติ
     buildWellFilterChips();
     renderWellEditor();
     saveToStorage();
-  } catch(e) { showToast('⚠️ ใช้ข้อมูลที่บันทึกไว้'); }
-  finally { hideLoading(); }
+  } catch(e) { if (!opts.silent) showToast('⚠️ ใช้ข้อมูลที่บันทึกไว้'); }
+  finally { if (!opts.silent) hideLoading(); }
   renderAll();
   setPendingBadge();
-  flushQueue({ silent:true });
 }
 
 function renderAll() {
@@ -1100,12 +1094,15 @@ function rebuildWellsFromHouses() {
   });
   const ids = [...seen.keys()];
   if (!ids.length) return;
+  const ov = state.settings.wellOverrides || {};
   state.wells = ids.map((id, i) => {
     const existing = state.wells.find(w => w.id === id);
+    const o = ov[id] || {};
     return {
       id,
-      name:  seen.get(id) || existing?.name || id,
-      color: existing?.color || WELL_COLORS[i % WELL_COLORS.length]
+      // ลำดับความสำคัญ: ชื่อ/สีที่ผู้ใช้แก้เอง → ชื่อจากชีต → ของเดิม → ค่าเริ่มต้น
+      name:  o.name  || seen.get(id) || existing?.name || id,
+      color: o.color || existing?.color || WELL_COLORS[i % WELL_COLORS.length]
     };
   });
 }
@@ -1119,7 +1116,7 @@ function buildWellFilterChips() {
   row.innerHTML = `<button class="filter-chip active" onclick="setWellFilter('all',this)">🏠 ทั้งหมด</button>` +
     state.wells.map(w =>
       `<button class="filter-chip" onclick="setWellFilter('${w.id}',this)" style="border-color:${w.color}20">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${w.color};margin-right:5px;vertical-align:middle"></span>${w.name}
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${w.color};margin-right:5px;vertical-align:middle"></span>${escapeHtml(w.name)}
       </button>`
     ).join('');
 }
@@ -1137,7 +1134,7 @@ function renderWellSelectRow() {
   row.innerHTML = state.wells.map(w =>
     `<button class="well-select-chip" data-wid="${w.id}"
       style="border-color:${w.color}"
-      onclick="selectWell('${w.id}',this)">${w.name}</button>`
+      onclick="selectWell('${w.id}',this)">${escapeHtml(w.name)}</button>`
   ).join('');
 }
 
@@ -1158,7 +1155,7 @@ function renderWellEditor() {
   el.innerHTML = state.wells.map((w, i) =>
     `<div class="well-item">
       <div class="well-color-dot" style="background:${w.color}" onclick="cycleColor(${i})" title="เปลี่ยนสี"></div>
-      <input class="well-name-input" value="${w.name}" placeholder="ชื่อบ่อ..." oninput="state.wells[${i}].name=this.value" />
+      <input class="well-name-input" value="${escapeHtml(w.name)}" placeholder="ชื่อบ่อ..." oninput="state.wells[${i}].name=this.value" />
       <button class="well-del-btn" onclick="deleteWell('${w.id}')">🗑</button>
     </div>`
   ).join('');
@@ -1185,6 +1182,9 @@ function deleteWell(id) {
 }
 
 function saveWells() {
+  // จำชื่อ/สีที่แก้ไว้ ไม่ให้โดนข้อมูลชีตเขียนทับตอนรีเฟรชครั้งถัดไป
+  state.settings.wellOverrides = state.settings.wellOverrides || {};
+  state.wells.forEach(w => { state.settings.wellOverrides[w.id] = { name:w.name, color:w.color }; });
   saveToStorage();
   buildWellFilterChips();
   renderAll();
@@ -1226,7 +1226,7 @@ function renderDashboard() {
     const houseCount = state.houses.filter(h => h.wellId === w.id).length;
     return `<div class="well-bar-row">
       <div class="well-bar-header">
-        <span class="well-bar-name"><span class="well-dot" style="background:${w.color}"></span>${w.name} <span style="font-weight:400;color:var(--text-muted)">(${houseCount} บ้าน)</span></span>
+        <span class="well-bar-name"><span class="well-dot" style="background:${w.color}"></span>${escapeHtml(w.name)} <span style="font-weight:400;color:var(--text-muted)">(${houseCount} บ้าน)</span></span>
         <span class="well-bar-amount">${amt.toLocaleString()} บ.</span>
       </div>
       <div class="well-bar-track"><div class="well-bar-fill" style="width:${pct}%;background:${w.color}"></div></div>
@@ -1266,8 +1266,8 @@ function renderDashboard() {
       return `<div class="expense-card">
         <div class="expense-header">
           <div>
-            <div class="expense-desc">${e.description}</div>
-            <div class="expense-cat">${e.category}${w?` · <span style="color:${w.color};font-weight:600">${w.name}</span>`:''} · ${e.date||e.month}</div>
+            <div class="expense-desc">${escapeHtml(e.description)}</div>
+            <div class="expense-cat">${escapeHtml(e.category)}${w?` · <span style="color:${w.color};font-weight:600">${escapeHtml(w.name)}</span>`:''} · ${escapeHtml(e.date||e.month)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <div class="expense-amount">${(e.amount||0).toLocaleString()} บ.</div>
@@ -1289,8 +1289,8 @@ function renderRankList(elId, bills, isTop) {
     return `<div class="rank-row">
       <div class="rank-num ${rankClass}">${medal}</div>
       <div class="rank-info">
-        <div class="rank-name">${b.houseName}</div>
-        <div class="rank-addr">📍 ${b.address}${w ? ` · <span style="color:${w.color};font-weight:600">${w.name}</span>` : ''}</div>
+        <div class="rank-name">${escapeHtml(b.houseName)}</div>
+        <div class="rank-addr">📍 ${escapeHtml(b.address)}${w ? ` · <span style="color:${w.color};font-weight:600">${escapeHtml(w.name)}</span>` : ''}</div>
       </div>
       <div class="rank-units">${(b.units||0).toLocaleString()} หน่วย</div>
     </div>`;
@@ -1367,7 +1367,7 @@ function renderHouses(query='') {
       : `รายชื่อบ้านทั้งหมด (${filtered.length})`;
 
   if (!filtered.length) {
-    list.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><p>ไม่พบ "${query}"</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><p>ไม่พบ "${escapeHtml(query)}"</p></div>`;
     return;
   }
 
@@ -1379,7 +1379,7 @@ function renderHouses(query='') {
   list.innerHTML = filtered.map(h => {
     const status = billedMap.get(h.id);
     const w = wellById(h.wellId);
-    const initials = h.name.replace(/^(คุณ|นาย|นาง|นางสาว)\s*/,'').charAt(0) || '?';
+    const initials = escapeHtml(h.name.replace(/^(คุณ|นาย|นาง|นางสาว)\s*/,'').charAt(0) || '?');
     const cardCls = status==='done' ? 'done-card' : status==='noaccess' ? 'noaccess-card' : '';
     const avatarBg = status==='done' ? 'linear-gradient(135deg,#43A047 0%,#A5D6A7 100%)'
       : status==='noaccess' ? 'linear-gradient(135deg,#90A4AE 0%,#CFD8DC 100%)'
@@ -1393,10 +1393,10 @@ function renderHouses(query='') {
     return `<div class="house-card ${cardCls}" onclick="openReading('${h.id}')">
       <div class="house-avatar" style="background:${avatarBg}">${initials}</div>
       <div class="house-info">
-        <div class="house-name">${h.name}</div>
-        ${(h.address && h.address !== '-') ? `<div class="house-meta">📍 ${h.address}</div>` : ''}
+        <div class="house-name">${escapeHtml(h.name)}</div>
+        ${(h.address && h.address !== '-') ? `<div class="house-meta">📍 ${escapeHtml(h.address)}</div>` : ''}
         <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          ${w ? `<span class="house-well-tag" style="background:${w.color}18;color:${w.color}">💧 ${w.name}</span>` : ''}
+          ${w ? `<span class="house-well-tag" style="background:${w.color}18;color:${w.color}">💧 ${escapeHtml(w.name)}</span>` : ''}
           <span style="font-size:11px;color:var(--text-muted)">มิเตอร์ล่าสุด: ${h.lastReading||0}</span>
         </div>
       </div>
@@ -1464,6 +1464,11 @@ function openReading(houseId) {
     badge.style.background = 'var(--primary)';
   }
 
+  // ถ้าบ้านนี้จดไปแล้วในเดือนนี้ แจ้งให้รู้ว่าการบันทึกใหม่จะแทนที่ของเดิม (กันจดซ้ำโดยไม่รู้ตัว)
+  if (getThisMonthBilled().get(houseId)) {
+    showToast('ℹ️ บ้านนี้จดเดือนนี้แล้ว — ถ้าบันทึกใหม่จะแทนที่ของเดิม');
+  }
+
   openModal('modal-reading');
   setTimeout(() => document.getElementById('current-reading-input').focus(), 400);
 }
@@ -1480,24 +1485,11 @@ function onReadingChange() {
     return;
   }
   const units = cur - prev;
-  const rawCost   = units * s.unitPrice;
-  const total     = Math.max(s.minCharge, rawCost);
-  const waterCost = rawCost;
-  // serviceFee ใช้แสดงเฉพาะตอนใช้น้ำน้อยกว่าขั้นต่ำ
-  const isMin     = rawCost < s.minCharge;
+  const total = units * s.unitPrice;   // ค่าน้ำ = หน่วย × ราคาต่อหน่วย (ไม่มีค่าขั้นต่ำแล้ว)
 
   document.getElementById('calc-units').textContent = units.toLocaleString() + ' หน่วย';
   document.getElementById('calc-rate-label').textContent = `ค่าน้ำ (หน่วยละ ${s.unitPrice} บ.)`;
-  document.getElementById('calc-water').textContent = rawCost.toLocaleString() + ' บาท';
-  const svcEl = document.getElementById('calc-service');
-  const svcRow = svcEl.closest('.calc-row');
-  if (isMin) {
-    svcEl.closest('.calc-row').querySelector('span:first-child').textContent = 'ค่าขั้นต่ำ';
-    svcEl.textContent = s.minCharge.toLocaleString() + ' บาท';
-    if (svcRow) svcRow.style.display = '';
-  } else {
-    if (svcRow) svcRow.style.display = 'none';
-  }
+  document.getElementById('calc-water').textContent = total.toLocaleString() + ' บาท';
   document.getElementById('calc-total').textContent = total.toLocaleString() + ' บาท';
   document.getElementById('calc-box').classList.add('visible');
   document.getElementById('btn-view-receipt').disabled = false;
@@ -1513,7 +1505,7 @@ function onReadingChange() {
     }
   }
 
-  state.readingData = { units, waterCost, serviceFee: isMin ? s.minCharge : 0, total, currentReading:cur };
+  state.readingData = { units, total, currentReading:cur };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1525,7 +1517,7 @@ function openReceipt() {
   const h=state.selectedHouse, d=state.readingData, s=state.settings;
   const now=new Date();
   const r = {
-    billNo:  'B'+Date.now().toString().slice(-6),
+    billNo:  'B'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
     dateStr: now.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'}),
     monthStr:now.toLocaleDateString('th-TH',{month:'long',year:'numeric'}),
     h, d, s, w: wellById(state.selectedWellId)
@@ -1539,23 +1531,22 @@ function showReceipt(r, opts) {
   const {billNo,dateStr,monthStr,h,d,s,w}=r;
 
   document.getElementById('receipt-display').innerHTML = `
-    <div class="receipt-title">${s.villageName}</div>
+    <div class="receipt-title">${escapeHtml(s.villageName)}</div>
     <div style="text-align:center;font-size:11px;margin-bottom:5px">ใบเสร็จรับเงินค่าน้ำประปา</div>
     <hr class="receipt-divider"/>
-    <div class="receipt-row"><span>เลขที่</span><span style="font-weight:700">${billNo}</span></div>
-    <div class="receipt-row"><span>วันที่</span><span>${dateStr}</span></div>
-    <div class="receipt-row"><span>รอบ</span><span>${monthStr}</span></div>
-    ${w ? `<div class="receipt-row"><span>บ่อประปา</span><span style="font-weight:700;color:${w.color}">${w.name}</span></div>` : ''}
+    <div class="receipt-row"><span>เลขที่</span><span style="font-weight:700">${escapeHtml(billNo)}</span></div>
+    <div class="receipt-row"><span>วันที่</span><span>${escapeHtml(dateStr)}</span></div>
+    <div class="receipt-row"><span>รอบ</span><span>${escapeHtml(monthStr)}</span></div>
+    ${w ? `<div class="receipt-row"><span>บ่อประปา</span><span style="font-weight:700;color:${w.color}">${escapeHtml(w.name)}</span></div>` : ''}
     <hr class="receipt-divider"/>
-    <div class="receipt-row"><span>บ้านเลขที่</span><span style="font-weight:700">${h.address}</span></div>
-    <div class="receipt-row"><span>ชื่อ</span><span>${h.name}</span></div>
+    <div class="receipt-row"><span>บ้านเลขที่</span><span style="font-weight:700">${escapeHtml(h.address)}</span></div>
+    <div class="receipt-row"><span>ชื่อ</span><span>${escapeHtml(h.name)}</span></div>
     <hr class="receipt-divider"/>
     <div class="receipt-row"><span>อ่านครั้งก่อน</span><span>${h.lastReading||0}</span></div>
     <div class="receipt-row"><span>อ่านครั้งนี้</span><span>${d.currentReading}</span></div>
     <div class="receipt-row" style="font-weight:700"><span>หน่วยที่ใช้</span><span>${d.units} หน่วย</span></div>
     <hr class="receipt-divider"/>
-    ${d.waterCost>0?`<div class="receipt-row"><span>ค่าน้ำ</span><span>${d.waterCost.toLocaleString()} บ.</span></div>`:''}
-    <div class="receipt-row"><span>ค่าบริการ</span><span>${d.serviceFee.toLocaleString()} บ.</span></div>
+    <div class="receipt-row"><span>ค่าน้ำ (หน่วยละ ${s.unitPrice} บ.)</span><span>${d.total.toLocaleString()} บ.</span></div>
     <hr class="receipt-divider"/>
     <div class="receipt-total-row"><span>รวมทั้งสิ้น</span><span></span></div>
     <div class="receipt-big">${d.total.toLocaleString()} บาท</div>
@@ -1564,7 +1555,7 @@ function showReceipt(r, opts) {
     ${s.promptpayId ? `<div class="receipt-qr-wrap">
       <div style="font-size:9px;color:#555;margin-bottom:3px">📲 สแกนจ่าย PromptPay</div>
       <div id="receipt-qr-img"></div>
-      <div style="font-size:8px;color:#aaa;margin-top:2px">${s.promptpayId}</div>
+      <div style="font-size:8px;color:#aaa;margin-top:2px">${escapeHtml(s.promptpayId)}</div>
     </div>` : ''}`;
 
   state.currentReceipt = r;
@@ -1639,54 +1630,6 @@ function applyPaperSize(size) {
   }
 }
 
-async function saveReceiptImage() {
-  const btn = document.getElementById('btn-img');
-  const el  = document.getElementById('receipt-display');
-  if (!el || !window.html2canvas) { showToast('⏳ กรุณารอสักครู่แล้วลองใหม่'); return; }
-  btn.disabled = true; btn.textContent = '⏳ กำลังสร้างรูป...';
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 2.5, useCORS: true, backgroundColor: '#ffffff',
-      logging: false, allowTaint: true
-    });
-    const r = state.currentReceipt;
-    const fname = `ใบเสร็จ_${r?.h?.address||''}_${r?.monthStr||''}.png`
-                    .replace(/\s/g,'_').replace(/\//g,'-');
-
-    if (!state.demoMode && state.settings.scriptUrl) {
-      // ─── บันทึกลง Google Drive ───
-      btn.textContent = '☁️ กำลังอัปโหลด Drive...';
-      const base64 = canvas.toDataURL('image/png').split(',')[1];
-      try {
-        const res = await apiPost({
-          action: 'uploadReceipt',
-          image: base64,
-          fileName: fname,
-          folderId: state.settings.folderId || FOLDER_ID
-        });
-        if (res.fileUrl) {
-          showToast('✅ บันทึกลง Google Drive แล้ว');
-          if (confirm('✅ บันทึกรูปลง Google Drive แล้ว!\nต้องการเปิดดูใน Drive ไหมครับ?')) {
-            window.open(res.fileUrl, '_blank');
-          }
-        } else {
-          showToast('⚠️ Drive ตอบกลับผิดพลาด — ดาวน์โหลดแทน');
-          canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
-        }
-      } catch(e) {
-        showToast('⚠️ อัปโหลดไม่สำเร็จ — ดาวน์โหลดแทน');
-        canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
-      }
-    } else {
-      // ─── Demo / ยังไม่ตั้งค่า → ดาวน์โหลด ───
-      canvas.toBlob(b => fallbackDownload(b, fname), 'image/png');
-    }
-  } catch(e) {
-    showToast('⚠️ ไม่สามารถสร้างรูปได้');
-  } finally {
-    btn.disabled = false; btn.textContent = '📸 บันทึกรูป Drive';
-  }
-}
 function fallbackDownload(blob, fname) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1768,6 +1711,9 @@ async function doSaveBill() {
     wellId:state.selectedWellId||'', savedAt:new Date().toISOString().split('T')[0]
   };
 
+  // กันบิลซ้ำ: 1 บ้าน = 1 บิลต่อเดือน — ถ้าเดือนนี้มีบิลของบ้านนี้อยู่แล้ว ให้แทนที่ของเดิม (ไม่เพิ่มใบใหม่)
+  const dupes = state.bills.filter(b => b.houseId===h.id && b.readDate===ym);
+  if (dupes.length) state.bills = state.bills.filter(b => !(b.houseId===h.id && b.readDate===ym));
   state.bills.unshift(record);
   const hi=state.houses.findIndex(hh=>hh.id===h.id);
   if (hi>=0) { state.houses[hi].lastReading=d.currentReading; state.houses[hi].lastDate=new Date().toISOString().split('T')[0]; state.houses[hi].wellId=state.selectedWellId||state.houses[hi].wellId; }
@@ -1791,6 +1737,8 @@ async function doSaveBill() {
   let queued = false;
   if (!state.demoMode) {
     showLoading('กำลังบันทึก...');
+    // ลบบิลเดิมของเดือนนี้บนเซิร์ฟเวอร์ก่อน (กรณีรหัสบิลเก่าไม่ตรงกับใบใหม่)
+    for (const old of dupes) { if (old.id && old.id !== record.id) await apiPostQueued({ action:'deleteBill', id:old.id }); }
     const q1 = await apiPostQueued({ action:'saveReading', ...record });
     if (q1.queued) queued = true;
     if (base64) {
@@ -1835,10 +1783,14 @@ async function markNoAccess() {
     units:0, unitPrice:0, amount:0, status:'noaccess',
     wellId:h.wellId||'', savedAt:now.toISOString().split('T')[0]
   };
+  // กันซ้ำ: ถ้าเดือนนี้มีบิลของบ้านนี้อยู่แล้ว ให้แทนที่ของเดิม
+  const dupes = state.bills.filter(b => b.houseId===h.id && b.readDate===ym);
+  if (dupes.length) state.bills = state.bills.filter(b => !(b.houseId===h.id && b.readDate===ym));
   state.bills.unshift(record);
   saveToStorage(); renderAll();
   showToast('🚫 บันทึกแล้ว: ไม่มีการใช้น้ำเดือนนี้');
   if (!state.demoMode && state.settings.scriptUrl) {
+    for (const old of dupes) { if (old.id && old.id !== record.id) await apiPostQueued({ action:'deleteBill', id:old.id }); }
     await apiPostQueued({ action:'saveReading', ...record });
   }
 }
@@ -1852,7 +1804,7 @@ function openAddHouseModal() {
   document.getElementById('new-initial').value='0';
   document.getElementById('new-note').value='';
   const sel=document.getElementById('new-well');
-  sel.innerHTML=state.wells.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  sel.innerHTML=state.wells.map(w=>`<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('');
   openModal('modal-add-house');
 }
 async function addHouse() {
@@ -1905,8 +1857,8 @@ function renderBills() {
     return `<div class="bill-card" style="${isNA?'border-left-color:#90A4AE;opacity:.75':''}">
       <div class="bill-header">
         <div>
-          <div class="bill-house">${b.houseName}</div>
-          <div style="font-size:11px;color:var(--text-muted)">📍 ${b.address}${w?` · <span style="color:${w.color};font-weight:600">${w.name}</span>`:''}</div>
+          <div class="bill-house">${escapeHtml(b.houseName)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">📍 ${escapeHtml(b.address)}${w?` · <span style="color:${w.color};font-weight:600">${escapeHtml(w.name)}</span>`:''}</div>
         </div>
         <div class="bill-amount" style="${isNA?'color:#90A4AE;font-size:13px':''}">
           ${isNA?'🚫 ไม่มีการใช้น้ำ':(b.amount||0).toLocaleString()+' บ.'}
@@ -1960,8 +1912,7 @@ function onEditBillChange() {
   const cur  = parseInt(document.getElementById('edit-cur').value) || 0;
   const s = state.settings;
   const units = cur > prev ? cur - prev : 0;
-  const raw   = units * s.unitPrice;
-  const total = units > 0 ? Math.max(s.minCharge, raw) : 0;
+  const total = units * s.unitPrice;
   document.getElementById('edit-units').textContent  = units.toLocaleString() + ' หน่วย';
   document.getElementById('edit-amount').textContent = total.toLocaleString() + ' บาท';
   const warn = document.getElementById('edit-warn');
@@ -1989,7 +1940,7 @@ async function saveEditBill() {
   btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
   const s = state.settings;
   const units = cur > prev ? cur - prev : 0;
-  const total = units > 0 ? Math.max(s.minCharge, units * s.unitPrice) : 0;
+  const total = units * s.unitPrice;
   b.prevReading = prev; b.currentReading = cur; b.units = units;
   b.unitPrice = s.unitPrice; b.amount = total;
   b.status = units > 0 ? '' : 'noaccess';
@@ -2028,10 +1979,7 @@ function reprintBill(id) {
   const s = state.settings;
   const w = wellById(b.wellId);
   const h = { address:b.address, name:b.houseName, lastReading:b.prevReading };
-  const unitPrice = b.unitPrice || s.unitPrice;
-  const waterCost = (b.units || 0) * unitPrice;
-  const isMin = waterCost < s.minCharge;
-  const d = { currentReading:b.currentReading, units:b.units, waterCost, serviceFee: isMin ? s.minCharge : 0, total:b.amount };
+  const d = { currentReading:b.currentReading, units:b.units, total:b.amount };
   const r = {
     billNo: b.id,
     dateStr: formatLastDate(b.savedAt || b.readDate),
@@ -2049,8 +1997,6 @@ function populateSettings() {
   document.getElementById('cfg-url').value=s.scriptUrl||'';
   document.getElementById('cfg-village').value=s.villageName;
   document.getElementById('cfg-unit-price').value=s.unitPrice;
-  document.getElementById('cfg-min-charge').value=s.minCharge;
-  document.getElementById('cfg-min-units').value=s.minUnits;
   document.getElementById('cfg-folder-id').value=s.folderId||'';
   document.getElementById('cfg-promptpay').value=s.promptpayId||'';
   const paperSel = document.getElementById('cfg-paper');
@@ -2083,8 +2029,6 @@ function saveSettings() {
   state.settings.scriptUrl  = document.getElementById('cfg-url').value.trim();
   state.settings.villageName= document.getElementById('cfg-village').value.trim()||'ประปาหมู่บ้านชุกหว้า';
   state.settings.unitPrice  = parseFloat(document.getElementById('cfg-unit-price').value)||8;
-  state.settings.minCharge  = parseFloat(document.getElementById('cfg-min-charge').value)||30;
-  state.settings.minUnits   = parseFloat(document.getElementById('cfg-min-units').value)||10;
   state.settings.folderId     = document.getElementById('cfg-folder-id').value.trim();
   const paperSel = document.getElementById('cfg-paper');
   if (paperSel) state.settings.paperSize = paperSel.value;
@@ -2111,7 +2055,7 @@ function openAddExpenseModal() {
   // Populate well options
   const sel = document.getElementById('exp-well');
   sel.innerHTML = '<option value="">— ไม่ระบุบ่อ —</option>' +
-    state.wells.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+    state.wells.map(w => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('');
   openModal('modal-add-expense');
 }
 
@@ -2165,8 +2109,8 @@ function renderExpenseList() {
     return `<div class="expense-card">
       <div class="expense-header">
         <div>
-          <div class="expense-desc">${e.description}</div>
-          <div class="expense-cat">${e.category}${w ? ` · <span style="color:${w.color};font-weight:600">${w.name}</span>` : ''} · ${e.date||e.month}</div>
+          <div class="expense-desc">${escapeHtml(e.description)}</div>
+          <div class="expense-cat">${escapeHtml(e.category)}${w ? ` · <span style="color:${w.color};font-weight:600">${escapeHtml(w.name)}</span>` : ''} · ${escapeHtml(e.date||e.month)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div class="expense-amount">${(e.amount||0).toLocaleString()} บ.</div>
@@ -2249,25 +2193,13 @@ function makePwaIcon(size) {
 // ════════════════════════════════════════════════════════════
 //  SERVICE WORKER
 // ════════════════════════════════════════════════════════════
+// ใช้ไฟล์ sw.js จริง (ต้องวางไว้โฟลเดอร์เดียวกับ index.html บน GitHub)
+// แบบ network-first: เมื่อมีเน็ตจะได้เวอร์ชันล่าสุดเสมอ → อัปเดตแอปในอนาคตถึงผู้ใช้แน่นอน
+// ถ้าไม่มีไฟล์ sw.js แอปก็ยังทำงานได้ปกติ (แค่เปิดออฟไลน์ไม่ได้)
 if ('serviceWorker' in navigator) {
-  const sw=`const C='prapa-v3';
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./?pwa'])));
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  if(e.request.url.includes('script.google.com')||e.request.url.includes('googleapis.com')){
-    e.respondWith(fetch(e.request));
-    return;
-  }
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-});`;
-  const swBlob=new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" defer></script>
