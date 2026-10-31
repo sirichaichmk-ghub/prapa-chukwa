@@ -242,12 +242,6 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .seg button{flex:1;min-height:3rem;border-radius:11px;font-weight:800;color:var(--muted)}
 .seg button.on{background:#fff;color:var(--pri);box-shadow:var(--shadow)}
 .seg button:nth-child(1){font-size:.9rem} .seg button:nth-child(2){font-size:1.05rem} .seg button:nth-child(3){font-size:1.25rem}
-.toggle{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;padding:.4rem 0;min-height:3.2rem}
-.toggle .tx{flex:1;font-weight:700}
-.toggle .tx small{display:block;font-weight:600;color:var(--muted)}
-.sw{width:3.4rem;height:2rem;border-radius:99px;background:#CBD5E1;position:relative;flex-shrink:0;transition:background .2s}
-.sw::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.6rem;height:1.6rem;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.toggle.on .sw{background:var(--ok)} .toggle.on .sw::after{left:1.6rem}
 details.admin summary{font-weight:800;padding:.4rem 0;cursor:pointer;color:var(--muted);list-style:none;min-height:2.75rem;display:flex;align-items:center;gap:.4rem}
 details.admin summary::-webkit-details-marker{display:none}
 .kv{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;border-bottom:1px dashed var(--line)}
@@ -369,9 +363,6 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
         <button data-act="textSize" data-v="l">ใหญ่</button>
         <button data-act="textSize" data-v="xl">ใหญ่มาก</button>
       </div>
-      <button class="toggle" id="tg-img" data-act="toggleImg" style="margin-top:.6rem">
-        <span class="tx">เก็บรูปใบเสร็จลงเครื่องอัตโนมัติ<small>ไว้พิมพ์ผ่านแอปเครื่องพิมพ์</small></span><span class="sw"></span>
-      </button>
     </div>
 
     <div class="h2">ข้อมูลบนใบเสร็จ</div>
@@ -482,7 +473,7 @@ const MAX_DIGITS = 7;
 
 const S = {   // ข้อมูลที่เก็บในเครื่อง
   settings: { villageName:'ประปาหมู่บ้านชุกหว้า', unitPrice:8, bankAccount:'', bankName:'',
-              scriptUrl:'', textSize:'l', autoSaveImage:true },
+              scriptUrl:'', textSize:'l' },
   houses:[], bills:[], expenses:[], queue:[], failed:[], lastSync:0, serverVersion:0
 };
 const UI = { view:'home', cycle:thisMonth(), sumMonth:thisMonth(), well:'all', q:'',
@@ -553,7 +544,6 @@ function migrateOld(){
     ['villageName','unitPrice','bankAccount','bankName','scriptUrl'].forEach(k => { if (s[k]) S.settings[k] = s[k]; });
     // ค่าที่ผู้ใช้ตั้งไว้จริงในแอปรุ่นเดิม → ส่งขึ้น Sheet ครั้งแรก (เครื่องใหม่ที่มีแต่ค่าเริ่มต้นจะไม่ส่ง)
     if (s.unitPrice || s.bankAccount || s.bankName) S.settings.seedSettings = true;
-    if (s.autoSaveImage === false) S.settings.autoSaveImage = false;
     if (Array.isArray(d.houses)) S.houses = d.houses;
     if (Array.isArray(d.bills)) S.bills = d.bills;
     if (Array.isArray(d.expenses)) S.expenses = d.expenses;
@@ -1357,8 +1347,7 @@ async function showDone(bill, fresh){
     try {
       const canvas = await drawReceipt(bill);
       if (!UI.done || UI.done.billId !== bill.id) return;
-      $('d-img').src = canvas.toDataURL('image/png');
-      if (fresh && S.settings.autoSaveImage) downloadCanvas(canvas, receiptFileName(bill), true);
+      $('d-img').src = canvas.toDataURL('image/png');   // แค่แสดง — ดาวน์โหลดเมื่อกด "เก็บรูป" เท่านั้น
     } catch (e) { console.error(e); toast('⚠️ สร้างรูปใบเสร็จไม่สำเร็จ'); }
   }
 }
@@ -1546,7 +1535,6 @@ function applyTextSize(){
 }
 function renderSettings(){
   applyTextSize();
-  $('tg-img').classList.toggle('on', !!S.settings.autoSaveImage);
   const q = S.queue.length, f = S.failed.length;
   $('set-sync').innerHTML =
     (S.settings.scriptUrl && S.lastSync && S.serverVersion < 4 ? `<div class="note-bad">ระบบหลังบ้าน (Code.gs) ยังเป็นรุ่นเก่า — ผู้ดูแลควรอัปเดตเป็น V.4 เพื่อให้ลบค่าใช้จ่ายและตั้งค่าข้ามเครื่องได้</div>` : '') +
@@ -1730,7 +1718,6 @@ const ACT = {
     renderSummary(); toast('ลบแล้ว');
   },
   textSize: d => { S.settings.textSize = d.v; save(); applyTextSize(); },
-  toggleImg: () => { S.settings.autoSaveImage = !S.settings.autoSaveImage; save(); renderSettings(); },
   saveInfo: () => saveInfo(),
   addHouse: () => addHouse(),
   saveHouse: () => saveHouse(),
