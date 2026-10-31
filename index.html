@@ -85,6 +85,7 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .hero-stat b{grid-row:2;font-size:1.4rem}
 .sec{font-size:.95rem;font-weight:800;color:var(--muted);margin:.9rem .3rem .45rem;display:flex;justify-content:space-between}
 .sec.ok{color:var(--ok)}
+.sec.warn{color:var(--warn);background:var(--warn-soft);border-radius:12px;padding:.5rem .8rem;margin:.6rem 0 .5rem}
 .back-cycle{background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:.6rem .9rem;font-weight:700;margin-bottom:.8rem;font-size:.95rem}
 
 .chips{display:flex;gap:.5rem;overflow-x:auto;padding:.1rem .1rem .5rem;scrollbar-width:none}
@@ -879,9 +880,55 @@ function matchHouses(text){
   return found;
 }
 
+/* ── ชื่อใกล้เคียง: เมื่อพูด/พิมพ์แล้วไม่ตรงทุกตัวอักษร ──
+ * เสียงไทยเขียนได้หลายแบบ (บุญ/บุน, ศรี/สี, พร/พอน) และระบบฟังเสียงมักสะกดเพี้ยน
+ * จึงแปลงเป็น "เสียงอ่านคร่าวๆ" ก่อน แล้ววัดว่าต่างกันกี่ตัวอักษร */
+const SOUND_MAP = { 'ญ':'น','ณ':'น','ฬ':'ล','ร':'ล','ศ':'ส','ษ':'ส','ซ':'ส','ฐ':'ท','ฑ':'ท','ฒ':'ท','ถ':'ท','ธ':'ท',
+  'ฎ':'ด','ฏ':'ต','ภ':'พ','ผ':'พ','ฆ':'ค','ฅ':'ค','ฃ':'ข','ฌ':'ช','ฉ':'ช','ฝ':'ฟ','ฮ':'ห' };
+function soundKey(s){
+  return normName(s).replace(/[่-๎ัะ็ๆ]/g, '')   // ตัดวรรณยุกต์ การันต์ ไม้หันอากาศ สระอะ
+    .replace(/[ก-ฮ]/g, c => SOUND_MAP[c] || c);
+}
+// จำนวนตัวอักษรที่ต่างกันน้อยที่สุด เมื่อเทียบ q กับ "ช่วงใดก็ได้" ในชื่อ (พูดแค่ชื่อต้น/นามสกุลก็เทียบได้)
+function partialDistance(q, text){
+  let prev = new Array(text.length + 1).fill(0);
+  for (let i = 1; i <= q.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= text.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (q[i - 1] === text[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return Math.min(...prev);
+}
+// คืนบ้านที่ชื่อใกล้เคียงที่สุด (ไม่เกิน limit หลัง) จากคำที่ได้ยินหลายแบบ
+function similarHouses(texts, limit){
+  const best = new Map();
+  for (const t of texts) {
+    const raw = String(t || '').trim().replace(/^(บ้าน|ของ)\s*/, '');
+    const parts = [raw].concat(raw.split(/\s+/)).map(soundKey).filter(p => p.length >= 3);
+    for (const q of new Set(parts)) {
+      const allow = Math.max(1, Math.floor(q.length / 3));   // ยอมให้ผิดได้ ~1 ใน 3 ตัวอักษร
+      for (const h of S.houses) {
+        const d = partialDistance(q, soundKey(h.name));
+        if (d > allow) continue;
+        const score = d / q.length;
+        if (!best.has(h.id) || score < best.get(h.id)) best.set(h.id, score);
+      }
+    }
+  }
+  return [...best.entries()].sort((a, b) => a[1] - b[1]).slice(0, limit || 6).map(([id]) => houseById(id));
+}
+
 function renderHouseList(){
   const ym = UI.cycle;
-  const list = UI.q.trim() ? matchHouses(UI.q) : wellHouses();
+  let list = UI.q.trim() ? matchHouses(UI.q) : wellHouses();
+  // ไม่เจอตรงๆ → แสดงชื่อที่ใกล้เคียงแทน (ตอนพูด ใช้คำที่ระบบได้ยินทุกแบบ)
+  let similar = false;
+  if (UI.q.trim() && !list.length) {
+    list = similarHouses(UI.qAlts && UI.qAltsFor === UI.q ? UI.qAlts : [UI.q]);
+    similar = list.length > 0;
+  }
   const el = $('house-list');
   if (!S.houses.length && UI.pulling) { el.innerHTML = `<div class="list"><div class="empty"><span class="spin" style="font-size:2rem;color:var(--pri)"></span><p style="margin-top:.6rem">กำลังโหลดรายชื่อบ้าน…</p></div></div>`; return; }
   if (!S.houses.length) { el.innerHTML = `<div class="list"><div class="empty"><div class="e">🏠</div>ยังไม่มีรายชื่อบ้าน<br><button class="link" data-act="syncNow">โหลดข้อมูลจาก Google Sheet</button></div></div>`; return; }
@@ -903,6 +950,11 @@ function renderHouseList(){
       <span class="st ${st}">${mark}</span>
       <span class="mid"><span class="nm" style="display:block">${esc(h.name)}</span><span class="sub" style="display:block">${sub}</span></span>${right}</button>`;
   };
+  if (similar) {   // เรียงตามความใกล้เคียง (ใกล้สุดขึ้นก่อน) ไม่แยกกลุ่ม
+    el.innerHTML = `<div class="sec warn"><span>ไม่พบ "${esc(UI.q)}" ตรงๆ — ชื่อที่ใกล้เคียง</span></div>` +
+      `<div class="list">${rows.map(rowHtml).join('')}</div>`;
+    return;
+  }
   el.innerHTML =
     (pend.length ? `<div class="sec"><span>ยังไม่จด</span><span>${pend.length} หลัง</span></div><div class="list">${pend.map(rowHtml).join('')}</div>` : '') +
     (done.length ? `<div class="sec ok"><span>จดแล้ว</span><span>${done.length} หลัง</span></div><div class="list">${done.map(rowHtml).join('')}</div>` : '');
@@ -1094,7 +1146,11 @@ function voiceSearch(){
       else if (pend.length === 1) openMeter(pend[0].id);
       return true;
     }
-    setQuery(alts[0] || '');
+    // ไม่ตรงเลย → แสดงชื่อใกล้เคียงจากคำที่ได้ยินทุกแบบ ให้ผู้ใช้แตะเลือกเอง (ไม่เปิดให้อัตโนมัติ กันเลือกผิดบ้าน)
+    const q = (alts[0] || '').trim();
+    UI.qAlts = alts; UI.qAltsFor = q;
+    setQuery(q);
+    if (similarHouses(alts).length) { toast('ไม่เจอชื่อตรงๆ — เลือกจากชื่อใกล้เคียงด้านล่าง', 3500); return true; }
     return false;
   });
 }
