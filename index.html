@@ -546,6 +546,8 @@ function migrateOld(){
     if (!raw) return;
     const d = JSON.parse(raw), s = d.settings || {};
     ['villageName','unitPrice','bankAccount','bankName','scriptUrl'].forEach(k => { if (s[k]) S.settings[k] = s[k]; });
+    // ค่าที่ผู้ใช้ตั้งไว้จริงในแอปรุ่นเดิม → ส่งขึ้น Sheet ครั้งแรก (เครื่องใหม่ที่มีแต่ค่าเริ่มต้นจะไม่ส่ง)
+    if (s.unitPrice || s.bankAccount || s.bankName) S.settings.seedSettings = true;
     if (s.autoSaveImage === false) S.settings.autoSaveImage = false;
     if (Array.isArray(d.houses)) S.houses = d.houses;
     if (Array.isArray(d.bills)) S.bills = d.bills;
@@ -739,10 +741,13 @@ async function pull(opts){
     });
     S.serverVersion = Number(r.version) || 0;
     S.lastSync = Date.now();
-    // อัปเกรดครั้งแรก: Sheet ยังไม่มีตั้งค่า → ส่งค่าจากเครื่องนี้ขึ้นไป (เครื่องอื่นจะได้ค่าเดียวกัน)
-    if (S.serverVersion >= 4 && r.settings && !Object.keys(r.settings).length) {
-      const s = S.settings;
-      enqueue({ action:'saveSettings', settings:{ villageName:s.villageName, unitPrice:s.unitPrice, bankAccount:s.bankAccount, bankName:s.bankName } });
+    // อัปเกรดจากแอปรุ่นเดิม: Sheet ยังไม่มีตั้งค่า → ส่งค่าจริงจากเครื่องนี้ขึ้นไป (ครั้งเดียว)
+    if (S.settings.seedSettings && S.serverVersion >= 4 && r.settings) {
+      if (!Object.keys(r.settings).length) {
+        const s = S.settings;
+        enqueue({ action:'saveSettings', settings:{ villageName:s.villageName, unitPrice:s.unitPrice, bankAccount:s.bankAccount, bankName:s.bankName } });
+      }
+      S.settings.seedSettings = false;
     }
     applyPending();   // ของที่เพิ่งกดบันทึกระหว่างโหลด ยังต้องเห็นบนจอ
     save();
