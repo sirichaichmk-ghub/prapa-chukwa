@@ -171,6 +171,10 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .result.err{background:var(--bad-soft)} .result.err .big{color:var(--bad);font-size:1.15rem}
 .result.zero .big{color:var(--muted);font-size:1.25rem}
 .result.warn{background:var(--warn-soft)} .result.warn .calc{color:var(--warn);font-weight:800}
+.result.swap{background:#FFF4E5;border:3px solid var(--warn);cursor:pointer}
+.result.swap .calc{color:var(--warn);font-weight:700;-webkit-line-clamp:3}
+.result.swap .big{font-size:1.1rem}
+.wtag{display:inline-block;font-size:.78rem;font-weight:800;padding:.05rem .5rem;border-radius:99px;margin-left:.35rem;vertical-align:.1rem}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:.5rem;flex:1 1 0;min-height:min(15rem,40vh)}
 .key{background:#fff;border-radius:16px;font-size:1.75rem;font-weight:800;box-shadow:0 2px 0 #CCD8E6,0 4px 10px rgba(15,27,45,.06);min-height:0;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:transform .08s,background .08s}
 .key:active{transform:translateY(2px);box-shadow:0 0 0 #CCD8E6;background:var(--pri-soft)}
@@ -946,9 +950,11 @@ function renderHouseList(){
       : st === 'n' ? 'ไม่มีการใช้น้ำ' : `${fmt(b.prevReading)} → ${fmt(b.currentReading)}`;
     const right = st === 'd' ? `<div class="amt">${fmt(b.amount)} ฿<small>${fmt(b.units)} หน่วย</small></div>` : '';
     const mark = st === 'd' ? icon('check') : st === 'n' ? '0' : '';
+    // ชื่อซ้ำ → ป้ายบ่อสีเด่นข้างชื่อ จะได้ไม่เลือกผิดหลัง
+    const dup = w && namesakes(h).length ? `<span class="wtag" style="background:${w.color};color:#fff">${esc(w.name)}</span>` : '';
     return `<button class="row" data-act="openHouse" data-id="${esc(h.id)}">
       <span class="st ${st}">${mark}</span>
-      <span class="mid"><span class="nm" style="display:block">${esc(h.name)}</span><span class="sub" style="display:block">${sub}</span></span>${right}</button>`;
+      <span class="mid"><span class="nm" style="display:block">${esc(h.name)}${dup}</span><span class="sub" style="display:block">${sub}</span></span>${right}</button>`;
   };
   if (similar) {   // เรียงตามความใกล้เคียง (ใกล้สุดขึ้นก่อน) ไม่แยกกลุ่ม
     el.innerHTML = `<div class="sec warn"><span>ไม่พบ "${esc(UI.q)}" ตรงๆ — ชื่อที่ใกล้เคียง</span></div>` +
@@ -1010,14 +1016,15 @@ function renderMeter(){
     (w ? `<span class="tag" style="background:${w.color}1A;color:${w.color}">${esc(w.name)}</span>` : '') +
     (h.address ? `<span class="tag">บ้านเลขที่ ${esc(h.address)}</span>` : '') +
     `<span class="tag ${m.ym === thisMonth() ? '' : 'warn'}">รอบ ${esc(monthLabel(m.ym, true))}</span>` +
-    (m.editing ? '<span class="tag ok">จดแล้ว · แก้ไขได้</span>' : '');
+    (m.editing ? '<span class="tag ok">จดแล้ว · แก้ไขได้</span>' : '') +
+    (namesakes(h).length ? `<span class="tag warn">ชื่อซ้ำ ${namesakes(h).length + 1} หลัง — ดูบ่อให้ถูก</span>` : '');
   const usual = stats ? ` (ปกติ ~${fmt(stats.avg)})` : '';
+  res0();
   $('m-prevv').textContent = fmt(m.prev);
   $('m-cur').innerHTML = m.input === '' ? '<span class="ph">กดตัวเลข</span>' : esc(Number(m.input).toLocaleString('th-TH'));
   $('m-cur').classList.toggle('long', m.input.length >= 6);
 
   const c = meterCalc(), res = $('m-result'), btn = $('m-save');
-  res.className = 'result';
   if (c.state === 'empty') {
     res.innerHTML = `<div class="calc">ดูเลขบนมิเตอร์ แล้วกดตัวเลขด้านล่าง${stats ? `<br>บ้านนี้ปกติใช้ ~${fmt(stats.avg)} หน่วย/เดือน` : ''}</div>`;
     btn.disabled = true; btn.textContent = 'บันทึก';
@@ -1030,13 +1037,49 @@ function renderMeter(){
     res.innerHTML = `<div class="big">0 หน่วย — ไม่มีการใช้น้ำ</div><div class="calc">ไม่คิดค่าน้ำเดือนนี้</div>`;
     btn.disabled = false; btn.textContent = 'บันทึก · ไม่มีการใช้น้ำ';
   } else {
-    const tooHigh = stats && stats.n >= 2 ? c.units > Math.max(stats.avg * 2.5, stats.avg + 20) : c.units > 300;
+    const tooHigh = !isNormalUsage(h.id, m.ym, c.units);
     if (tooHigh) res.classList.add('warn');
     res.innerHTML = `<div class="big">${fmt(c.amount)} บาท</div><div class="calc">` + (tooHigh
       ? `⚠️ ใช้ ${fmt(c.units)} หน่วย สูงผิดปกติ${usual} — ตรวจเลขอีกครั้ง`
       : `ใช้ ${fmt(c.units)} หน่วย × ${fmt(c.price)} บาท${usual}`) + '</div>';
     btn.disabled = false; btn.textContent = `บันทึก · ${fmt(c.amount)} บาท`;
   }
+
+  // ชื่อซ้ำ: เลขนี้ไม่เข้ากับบ้านนี้ แต่เข้ากับบ้านชื่อเดียวกันอีกหลัง → ชวนเปลี่ยน (แตะกล่องผลลัพธ์)
+  if (c.state === 'low' || res.classList.contains('warn')) {
+    const alt = namesakeFor(h, m.ym, c.cur);
+    if (alt) {
+      const aw = wellOf(alt.h.wellId);
+      res.classList.add('swap');
+      res.dataset.act = 'switchHouse'; res.dataset.id = alt.h.id;
+      res.setAttribute('role', 'button');
+      res.querySelector('.calc').innerHTML = `🔄 เลขนี้ตรงกับ <b>${esc(alt.h.name)} · ${esc(aw ? aw.name : '')}</b> (ใช้ ${fmt(alt.units)} หน่วย) — แตะที่นี่เพื่อเปลี่ยน`;
+    }
+  }
+  function res0(){
+    const r = $('m-result');
+    r.className = 'result'; delete r.dataset.act; delete r.dataset.id; r.removeAttribute('role');
+  }
+}
+
+// ใช้น้ำปกติไหม (เทียบค่าเฉลี่ยของบ้านนั้นเอง; ไม่มีประวัติ → เกิน 300 หน่วยถือว่าผิดปกติ)
+function isNormalUsage(houseId, ym, units){
+  const s = usageStats(houseId, ym);
+  return s && s.n >= 2 ? units <= Math.max(s.avg * 2.5, s.avg + 20) : units <= 300;
+}
+// บ้านชื่อเดียวกัน (ไม่สนคำนำหน้า เว้นวรรค และเลขในวงเล็บ เช่น "คุณสมชาย (2)")
+function baseName(n){ return normName(n).replace(/\(.*?\)/g, ''); }
+function namesakes(h){ const b = baseName(h.name); return S.houses.filter(x => x.id !== h.id && baseName(x.name) === b); }
+// หาบ้านชื่อซ้ำที่ยังไม่จด และเลขมิเตอร์นี้ "เข้ากัน" (ไม่น้อยกว่าครั้งก่อน และใช้น้ำปกติ)
+function namesakeFor(h, ym, cur){
+  let best = null;
+  for (const x of namesakes(h)) {
+    if (statusOf(x.id, ym) !== 'p') continue;
+    const units = cur - prevReadingFor(x, ym);
+    if (units < 0 || !isNormalUsage(x.id, ym, units)) continue;
+    if (!best || units < best.units) best = { h: x, units };
+  }
+  return best;
 }
 
 function pressKey(k){
@@ -1134,16 +1177,26 @@ function startMic(){
     UI.meter.input = String(n).slice(0, MAX_DIGITS); renderMeter(); return true;
   });
 }
-// พูดชื่อ → เจอบ้านเดียว (ที่ยังไม่จด) เปิดหน้าจดให้เลย / เจอหลายหลัง แสดงให้เลือก
+// เปิดหน้าจดให้อัตโนมัติ เฉพาะเมื่อเจอ "หลังเดียวจริงๆ" (ทั้งหมู่บ้าน หรือในบ่อที่เลือกไว้)
+// ชื่อซ้ำหลายหลัง → ให้ผู้ใช้ดูบ่อแล้วแตะเลือกเอง (ไม่เดาแทน กันจดผิดบ้าน)
+function singleMatch(found){
+  if (found.length === 1) return found[0];
+  if (UI.well !== 'all') {
+    const inWell = found.filter(h => (h.wellId || '_none') === UI.well);
+    if (inWell.length === 1) return inWell[0];
+  }
+  return null;
+}
+// พูดชื่อ → เจอบ้านเดียว เปิดหน้าจดให้เลย / เจอหลายหลัง แสดงให้เลือก
 function voiceSearch(){
   listen($('q-mic'), 'พูดชื่อลูกบ้านได้เลย', alts => {
     for (const a of alts) {
       const found = matchHouses(a);
       if (!found.length) continue;
       setQuery(a.trim());
-      const pend = found.filter(h => statusOf(h.id, UI.cycle) === 'p');
-      if (found.length === 1) openMeter(found[0].id);
-      else if (pend.length === 1) openMeter(pend[0].id);
+      const one = singleMatch(found);
+      if (one) openMeter(one.id);
+      else if (found.length > 1) toast(`เจอ ${found.length} หลัง — ดูชื่อบ่อ แล้วแตะเลือก`, 3000);
       return true;
     }
     // ไม่ตรงเลย → แสดงชื่อใกล้เคียงจากคำที่ได้ยินทุกแบบ ให้ผู้ใช้แตะเลือกเอง (ไม่เปิดให้อัตโนมัติ กันเลือกผิดบ้าน)
@@ -1619,6 +1672,15 @@ const ACT = {
   clearQ: () => setQuery(''),
   voiceSearch: () => voiceSearch(),
   openHouse: d => openMeter(d.id, UI.cycle),
+  // ชื่อซ้ำ: ย้ายเลขที่กดไว้ไปบ้านชื่อเดียวกันอีกหลัง
+  switchHouse: d => {
+    const m = UI.meter, to = houseById(d.id); if (!m || !to) return;
+    const input = m.input;
+    openMeter(to.id, m.ym);
+    UI.meter.input = input; renderMeter(); vibrate(15);
+    const w = wellOf(to.wellId);
+    toast(`เปลี่ยนเป็น ${to.name}${w ? ' · ' + w.name : ''} แล้ว`);
+  },
   key: d => { if (d.k === 'c' && SR && (!UI.meter || UI.meter.input === '')) startMic(); else pressKey(d.k); },
   meterSave: () => saveMeter(),
   meterNoUse: () => meterNoUse(),
@@ -1699,9 +1761,9 @@ $('q').addEventListener('input', e => setQuery(e.target.value));
 // กด "ค้นหา" บนคีย์บอร์ด: ถ้าเจอบ้านที่ยังไม่จดหลังเดียว เปิดหน้าจดเลย
 $('q').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  const pend = matchHouses(UI.q).filter(h => statusOf(h.id, UI.cycle) === 'p');
-  if (pend.length === 1) { e.target.blur(); openMeter(pend[0].id); }
-  else e.target.blur();
+  e.target.blur();
+  const one = singleMatch(matchHouses(UI.q));
+  if (one) openMeter(one.id);
 });
 // คีย์บอร์ดจริง (คอมพิวเตอร์) ใช้ในหน้าจดมิเตอร์ได้
 document.addEventListener('keydown', e => {
