@@ -1,22 +1,19 @@
 /*************************************************************
- *  Service Worker — ระบบประปาหมู่บ้านชุกหว้า
- *  ─────────────────────────────────────────────────────────
- *  วางไฟล์นี้ไว้ "โฟลเดอร์เดียวกับ index.html" บน GitHub Pages
- *  (เช่น ถ้า index.html อยู่ที่ราก repo ก็วาง sw.js ที่รากด้วย)
+ *  Service Worker — ประปาหมู่บ้านชุกหว้า V.4
+ *  วางไว้โฟลเดอร์เดียวกับ index.html บน GitHub Pages
  *
- *  กลยุทธ์: network-first สำหรับตัวหน้าเว็บ
- *   → เมื่อมีเน็ต ผู้ใช้จะได้เวอร์ชันล่าสุดเสมอ (อัปเดตในอนาคตถึงผู้ใช้แน่นอน)
- *   → เมื่อออฟไลน์ ค่อยใช้ของที่ cache ไว้ (เปิดแอปได้แม้ไม่มีสัญญาณ)
- *
- *  เมื่อแก้ไขแอปครั้งใหญ่ ให้เปลี่ยนเลข VERSION ด้านล่าง
- *  เพื่อล้าง cache เก่าทิ้งให้สะอาด
+ *  - ตัวแอป: ใช้เน็ตก่อน (ได้รุ่นล่าสุดเสมอ) แต่ถ้าสัญญาณอ่อน
+ *    รอเกิน 4 วินาที → เปิดจากเครื่องทันที (ไม่ต้องยืนรอกลางทุ่ง)
+ *  - ฟอนต์/ไอคอน: เก็บในเครื่อง ใช้ได้แม้ออฟไลน์
+ *  - ข้อมูลจาก Google Apps Script: ไม่เก็บ ส่งตรงเสมอ
+ *  แก้แอปครั้งใหญ่ → เปลี่ยนเลข VERSION เพื่อล้างของเก่า
  *************************************************************/
-const VERSION = 'prapa-v4-2026-06-26';
-const CORE = ['./', './index.html'];
+const VERSION = 'prapa-v4.0.0';
+const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // ใช้เวอร์ชันใหม่ทันที ไม่ต้องรอปิดแท็บ
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE).catch(() => {})));
+  self.skipWaiting();
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE)).catch(() => {}));
 });
 
 self.addEventListener('activate', (e) => {
@@ -27,42 +24,37 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function putCache(req, res) {
+  if (res && (res.ok || res.type === 'opaque')) {
+    const copy = res.clone();
+    caches.open(VERSION).then((c) => c.put(req, copy)).catch(() => {});
+  }
+  return res;
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET') return; // POST ไป Apps Script ปล่อยผ่านตามปกติ
-
+  if (req.method !== 'GET') return;
   const url = req.url;
-  // ข้อมูลสดจาก Google — ห้าม cache เพื่อให้ได้ข้อมูลล่าสุดเสมอ
-  if (url.includes('script.google.com') ||
-      url.includes('script.googleusercontent.com') ||
-      url.includes('googleapis.com')) {
-    return; // ปล่อยให้เบราว์เซอร์จัดการเอง (network ตรง)
-  }
+  if (url.includes('script.google.com') || url.includes('script.googleusercontent.com')) return;
 
-  // ตัวหน้าเว็บ (เปิดหน้า/ไฟล์ HTML): network-first
-  const accept = req.headers.get('accept') || '';
-  if (req.mode === 'navigate' || accept.includes('text/html')) {
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(req, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match(req).then((r) => r || caches.match('./')))
-    );
+  // หน้าแอป: network-first พร้อมหมดเวลา 4 วินาที
+  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
+    e.respondWith((async () => {
+      const cached = await caches.match(req, { ignoreSearch: true }) || await caches.match('./');
+      const net = fetch(req).then((res) => putCache(req, res));
+      if (!cached) return net.catch(() => new Response('ออฟไลน์ — กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วเปิดใหม่', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+      const timeout = new Promise((r) => setTimeout(() => r(cached), 4000));
+      return Promise.race([net.catch(() => cached), timeout]);
+    })());
     return;
   }
 
-  // ไฟล์ static อื่น ๆ (เช่นไลบรารีจาก CDN): cache-first พอ — โหลดเร็ว ประหยัดเน็ต
+  // ไฟล์อื่น (ฟอนต์ ไอคอน): ใช้ของในเครื่องก่อน แล้วอัปเดตเบื้องหลัง
   e.respondWith(
-    caches.match(req).then((cached) =>
-      cached ||
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(VERSION).then((c) => c.put(req, copy)).catch(() => {});
-        return res;
-      }).catch(() => cached)
-    )
+    caches.match(req).then((cached) => {
+      const net = fetch(req).then((res) => putCache(req, res)).catch(() => cached);
+      return cached || net;
+    })
   );
 });
