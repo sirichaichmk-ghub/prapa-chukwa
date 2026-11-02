@@ -131,6 +131,8 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .b-line{background:#06C755;color:#fff;box-shadow:0 6px 16px rgba(6,199,85,.3)}
 .b-soft{background:var(--pri-soft);color:var(--pri)}
 .b-ghost{background:#fff;border:2px solid var(--line);color:var(--ink)}
+.b-print{background:#1f2937;color:#fff;box-shadow:0 6px 16px rgba(31,41,55,.28)}
+.btn:disabled{opacity:.6}
 .b-bad{background:var(--bad-soft);color:var(--bad)}
 .btns{display:flex;gap:.6rem}
 .btns>*{flex:1}
@@ -441,6 +443,7 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
   </div>
   <div class="done-body"><img class="rcpt" id="d-img" alt="ใบเสร็จ" /></div>
   <div class="done-foot">
+    <button class="btn b-print hidden" id="d-print" data-act="printReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3"/><path d="M7 14h10v7H7z"/></svg><span id="d-print-txt">พิมพ์ใบเสร็จ</span></button>
     <div class="btns">
       <button class="btn b-line" data-act="shareReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>ส่งใบเสร็จ</button>
       <button class="btn b-ghost" data-act="saveImg"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>เก็บรูป</button>
@@ -457,7 +460,7 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
 <script>
 'use strict';
 /* ════════════════════════════════════════════════════════════
- *  ประปาหมู่บ้านชุกหว้า — V.4
+ *  ประปาหมู่บ้านชุกหว้า — V.5
  *  แนวคิด: ผู้ใช้ทำแค่ "กดเลขมิเตอร์ → บันทึก" ที่เหลือแอปทำให้เอง
  *  - บันทึกลงเครื่องทันที แล้วค่อยส่งขึ้น Google Sheet เบื้องหลัง (ไม่ต้องรอเน็ต)
  *  - ใบเสร็จวาดด้วย canvas ในตัว ไม่พึ่งไลบรารีภายนอก (ใช้ได้ยาว)
@@ -1329,6 +1332,7 @@ async function showDone(bill, fresh){
   $('d-img').classList.toggle('hidden', isNA);
   $('d-img').removeAttribute('src');
   document.querySelector('#done .btns').classList.toggle('hidden', isNA);
+  $('d-print').classList.toggle('hidden', isNA || !CAN_BT_PRINT);
 
   // จดใหม่: ปุ่มเดียว กลับไปเลือกบ้านอื่น (หน้างานจริงไม่ได้เดินตามลำดับ) / ดูใบเสร็จเก่า: ปุ่มปิด
   const nb = $('d-next');
@@ -1382,6 +1386,113 @@ async function shareReceipt(){
   } else {
     downloadCanvas(r.canvas, receiptFileName(r.b), true);
     toast('เก็บรูปแล้ว — เปิด LINE แล้วแนบรูปนี้ส่งได้เลย', 4000);
+  }
+}
+
+/* ════════════ พิมพ์ตรงผ่าน Bluetooth (Xprinter XP-P810 / เครื่องพิมพ์ ESC/POS 80 มม.) ════════════
+ *  ส่งใบเสร็จเป็น "ภาพขาวดำ" ด้วยคำสั่ง ESC/POS GS v 0 → ภาษาไทยไม่เพี้ยน ไม่ขึ้นกับฟอนต์ในเครื่องพิมพ์
+ *  ใช้ได้กับ Chrome บน Android + เครื่องพิมพ์ที่มี Bluetooth LE ครั้งแรกต้องกดเลือกเครื่องพิมพ์ 1 ครั้ง
+ *  ใบเสร็จกว้าง 576 จุด = หัวพิมพ์ 80 มม. ที่ 203 dpi พอดี */
+const CAN_BT_PRINT = !!(navigator.bluetooth && navigator.bluetooth.requestDevice) && !IS_IOS;
+const BT_SERVICES = [   // บริการส่งข้อมูลที่โมดูล Bluetooth ของเครื่องพิมพ์ความร้อนใช้กันบ่อย
+  '000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '0000ff00-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb', '0000fee7-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb'
+];
+const BT_KEY = 'prapa_bt_printer';
+const BT = { device: null, ch: null, busy: false, chunk: 180 };
+
+// ภาพ RGBA → คำสั่ง ESC/POS (แบ่งเป็นแถบละ 128 แถว ไม่ให้บัฟเฟอร์เครื่องพิมพ์ล้น)
+function escposRaster(w, h, rgba){
+  const bw = Math.ceil(w / 8), BAND = 128, out = [0x1B, 0x40];   // ESC @ = เริ่มต้นเครื่องพิมพ์
+  for (let y0 = 0; y0 < h; y0 += BAND) {
+    const bh = Math.min(BAND, h - y0);
+    out.push(0x1D, 0x76, 0x30, 0, bw & 255, bw >> 8, bh & 255, bh >> 8);   // GS v 0
+    for (let y = y0; y < y0 + bh; y++) {
+      for (let bx = 0; bx < bw; bx++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const x = bx * 8 + bit;
+          if (x >= w) continue;
+          const i = (y * w + x) * 4;
+          const lum = rgba[i + 3] < 128 ? 255 : (rgba[i] * 299 + rgba[i + 1] * 587 + rgba[i + 2] * 114) / 1000;
+          if (lum < 160) byte |= 0x80 >> bit;
+        }
+        out.push(byte);
+      }
+    }
+  }
+  out.push(0x1B, 0x64, 4);   // ESC d 4 = ป้อนกระดาษ 4 บรรทัด ให้ฉีกได้พ้นหัวพิมพ์
+  return new Uint8Array(out);
+}
+
+async function btFindChannel(device){
+  const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
+  for (const svc of await server.getPrimaryServices()) {
+    for (const ch of await svc.getCharacteristics()) {
+      if (ch.properties.writeWithoutResponse || ch.properties.write) return ch;
+    }
+  }
+  throw new Error('NO_CHANNEL');
+}
+function btUse(device){
+  BT.device = device;
+  device.addEventListener('gattserverdisconnected', () => { BT.ch = null; });
+  try { localStorage.setItem(BT_KEY, device.id); } catch (e) {}
+}
+async function btPrinter(){
+  if (BT.ch && BT.device && BT.device.gatt.connected) return BT.ch;
+  if (BT.device) {   // เคยเลือกแล้วในรอบนี้ → ต่อใหม่เงียบๆ
+    try { return BT.ch = await btFindChannel(BT.device); } catch (e) { BT.device = null; }
+  }
+  if (navigator.bluetooth.getDevices) {   // เปิดแอปใหม่ → หาเครื่องเดิมที่เคยอนุญาตไว้ (Chrome บางรุ่นเท่านั้น)
+    try {
+      let saved = null; try { saved = localStorage.getItem(BT_KEY); } catch (e) {}
+      const d = saved && (await navigator.bluetooth.getDevices()).find(x => x.id === saved);
+      if (d) { btUse(d); return BT.ch = await btFindChannel(d); }
+    } catch (e) { BT.device = null; }
+  }
+  const d = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
+  btUse(d);
+  return BT.ch = await btFindChannel(d);
+}
+async function btWrite(ch, data){
+  const noResp = ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse;
+  for (let i = 0; i < data.length; ) {
+    const part = data.subarray(i, i + BT.chunk);
+    try {
+      if (noResp) await ch.writeValueWithoutResponse(part);
+      else if (ch.writeValueWithResponse) await ch.writeValueWithResponse(part);
+      else await ch.writeValue(part);
+    } catch (e) {
+      if (BT.chunk > 20) { BT.chunk = 20; continue; }   // เครื่องรับก้อนใหญ่ไม่ได้ → ส่งทีละ 20 ไบต์
+      throw e;
+    }
+    i += part.length;
+    if (noResp) await sleep(BT.chunk > 20 ? 12 : 4);   // เว้นจังหวะให้เครื่องพิมพ์ตามทัน
+  }
+}
+async function printReceipt(){
+  if (BT.busy) return;
+  const b = UI.done && S.bills.find(x => x.id === UI.done.billId); if (!b) return;
+  const btn = $('d-print'), txt = $('d-print-txt');
+  BT.busy = true; btn.disabled = true; txt.textContent = 'กำลังเชื่อมต่อ…';
+  try {
+    const ch = await btPrinter();   // เลือกเครื่องก่อนวาดรูป — Chrome ให้เปิดหน้าเลือกได้เฉพาะตอนเพิ่งกดปุ่ม
+    txt.textContent = 'กำลังพิมพ์…';
+    const c = await drawReceipt(b);
+    const img = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+    await btWrite(ch, escposRaster(img.width, img.height, img.data));
+    vibrate(40); toast('✓ ส่งไปพิมพ์แล้ว');
+  } catch (e) {
+    console.error(e);
+    if (e && e.name === 'NotFoundError' && /cancel/i.test(e.message)) {}   // ผู้ใช้กดยกเลิกหน้าเลือกเครื่อง
+    else if (e && e.message === 'NO_CHANNEL') { BT.device = null; toast('⚠️ เครื่องนี้ไม่ใช่เครื่องพิมพ์ที่รองรับ ลองเลือกใหม่', 4000); }
+    else if (e && e.name === 'NotFoundError') toast('⚠️ ไม่เจอเครื่องพิมพ์ — เปิดเครื่องพิมพ์ และเปิด Bluetooth/ตำแหน่งในมือถือ', 5000);
+    else { BT.device = null; BT.ch = null; toast('⚠️ พิมพ์ไม่สำเร็จ — กดพิมพ์อีกครั้ง แล้วเลือกเครื่องพิมพ์ใหม่', 5000); }
+  } finally {
+    BT.busy = false; btn.disabled = false; txt.textContent = 'พิมพ์ใบเสร็จ';
   }
 }
 
@@ -1687,6 +1798,7 @@ const ACT = {
   },
   doneHome: () => closeTop(),
   shareReceipt: () => shareReceipt(),
+  printReceipt: () => printReceipt(),
   saveImg: async () => { const r = await currentDoneCanvas(); if (r) downloadCanvas(r.canvas, receiptFileName(r.b)); },
   sumMonth: d => { const n = addMonths(UI.sumMonth, Number(d.d)); if (n <= thisMonth()) { UI.sumMonth = n; renderSummary(); } },
   shareSummary: () => shareSummary(),

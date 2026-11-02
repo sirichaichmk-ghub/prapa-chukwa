@@ -1,5 +1,5 @@
 /*************************************************************
- *  Service Worker — ประปาหมู่บ้านชุกหว้า V.4
+ *  Service Worker — ประปาหมู่บ้านชุกหว้า V.5
  *  วางไว้โฟลเดอร์เดียวกับ index.html บน GitHub Pages
  *
  *  - ตัวแอป: ใช้เน็ตก่อน (ได้รุ่นล่าสุดเสมอ) แต่ถ้าสัญญาณอ่อน
@@ -8,7 +8,7 @@
  *  - ข้อมูลจาก Google Apps Script: ไม่เก็บ ส่งตรงเสมอ
  *  แก้แอปครั้งใหญ่ → เปลี่ยนเลข VERSION เพื่อล้างของเก่า
  *************************************************************/
-const VERSION = 'prapa-v4.0.0';
+const VERSION = 'prapa-v5.0.0';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
