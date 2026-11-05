@@ -1287,26 +1287,31 @@ function setMicUI(on){
   [$('k-left'), $('q-mic')].forEach(b => b.classList.toggle('on', on && b === micBtn));
 }
 
-// แปลงคำพูด → ตัวเลข ("1250", "หนึ่ง สอง ห้า ศูนย์", "หนึ่งพันสองร้อยห้าสิบ")
+// แปลงคำพูด → ตัวเลข
+//   "1250" · "หนึ่ง สอง ห้า ศูนย์" · "หนึ่งพันสองร้อยห้าสิบ"
+//   และแบบผสมตัวเลขกับคำ ที่ระบบฟังเสียงชอบส่งมา: "2 พัน" → 2000, "2พัน500" → 2500, "1 หมื่น 2 พัน" → 12000
 function parseSpokenNumber(text){
-  let t = String(text || '').replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/[\s,.-]/g, '');
-  const dm = t.match(/\d+/);
-  if (dm) return parseInt(dm[0], 10);
+  const t = String(text || '').replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/[\s,.-]/g, '');
   const DIG = { 'ศูนย์':0,'หนึ่ง':1,'เอ็ด':1,'สอง':2,'ยี่':2,'สาม':3,'สี่':4,'ห้า':5,'หก':6,'เจ็ด':7,'แปด':8,'เก้า':9 };
   const MUL = { 'สิบ':10,'ร้อย':100,'พัน':1000,'หมื่น':10000,'แสน':100000 };
   const words = Object.keys(DIG).concat(Object.keys(MUL)).sort((a, b) => b.length - a.length);
+  // แยกเป็นชิ้น: ตัวเลขอารบิก (ทั้งก้อน) / คำตัวเลข / คำหลัก (สิบ ร้อย พัน…) — ตัวอักษรอื่นข้าม
   const toks = [];
   for (let i = 0; i < t.length;) {
+    const run = t.slice(i).match(/^\d+/);
+    if (run) { toks.push({ num: run[0] }); i += run[0].length; continue; }
     const w = words.find(x => t.startsWith(x, i));
     if (!w) { i++; continue; }
-    toks.push(w); i += w.length;
+    toks.push(w in MUL ? { mul: MUL[w] } : { num: String(DIG[w]) });
+    i += w.length;
   }
   if (!toks.length) return null;
-  if (!toks.some(x => x in MUL)) return parseInt(toks.map(x => DIG[x]).join(''), 10);   // พูดทีละหลัก
+  // ไม่มีคำหลักเลย → พูดทีละหลัก หรือเป็นตัวเลขล้วน: ต่อกันตามลำดับ
+  if (!toks.some(x => x.mul)) return parseInt(toks.map(x => x.num).join(''), 10);
   let total = 0, cur = null;
   for (const x of toks) {
-    if (x in DIG) cur = DIG[x];
-    else { total += (cur === null ? 1 : cur) * MUL[x]; cur = null; }
+    if (x.mul) { total += (cur === null ? 1 : cur) * x.mul; cur = null; }
+    else cur = parseInt(x.num, 10);
   }
   return total + (cur || 0);
 }
