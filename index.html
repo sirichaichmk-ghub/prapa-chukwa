@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0B5FD7" />
+<meta name="theme-color" content="#EEF2F6" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -16,18 +16,24 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" />
 <title>ประปาชุกหว้า</title>
 <style>
+/* สีจากงานประปาหมู่บ้าน: ท่อ PVC สีฟ้า · ตัวมิเตอร์ทองเหลือง · พื้นปูน
+ * ทุกคู่สีตัวอักษร ≥ 4.5:1 (วัดจริง) — ผู้ใช้อายุ 60 ใช้กลางแดด */
 :root{
-  --bg:#EEF3F9; --card:#fff; --ink:#0F1B2D; --muted:#46566B; --line:#D9E3EF;
-  --pri:#0B5FD7; --pri2:#1F8BF0; --pri-soft:#E5EFFD;
-  --ok:#11823F; --ok-soft:#E1F5E8; --warn:#A84F05; --warn-soft:#FEF1D8;
-  --bad:#C42525; --bad-soft:#FDE7E7;
-  --r:20px; --shadow:0 1px 2px rgba(15,27,45,.05),0 8px 24px rgba(15,27,45,.07);
+  --bg:#EEF2F6; --card:#fff; --ink:#12263A; --muted:#4A5C70; --line:#D3DCE6; --line2:#7D8EA4;
+  --pri:#0A57C2; --pri2:#3B82E0; --pri-soft:#E3EDFB;
+  --brass:#9A5F0C; --drum:#17324F;
+  --ok:#0E7A3A; --ok-soft:#E2F4E8; --warn:#8A4B00; --warn-soft:#FDF0D9;
+  --bad:#B42318; --bad-soft:#FDE8E6;
+  --r:16px; --shadow:0 2px 6px rgba(18,38,58,.08);
   --nav-h:4.6rem; --sb:env(safe-area-inset-bottom,0px); --st:env(safe-area-inset-top,0px);
   color-scheme:light;
 }
 html.t-m{font-size:16px} html.t-l{font-size:18px} html.t-xl{font-size:21px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Sarabun,'Noto Sans Thai','Leelawadee UI',Thonburi,Tahoma,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;-webkit-tap-highlight-color:transparent;overflow-wrap:break-word;min-height:100vh}
+/* Sarabun (ไทยมีหัว) อ่านง่ายสำหรับผู้สูงวัย · ระยะบรรทัด 1.5 กันสระบน/ล่างชนกัน */
+body{font-family:Sarabun,'Noto Sans Thai','Leelawadee UI',Thonburi,Tahoma,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-wrap:break-word;min-height:100vh;caret-color:var(--pri)}
+::selection{background:#BFD5F6;color:var(--ink)}
+.nw{white-space:nowrap}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;touch-action:manipulation}
 button:disabled{cursor:default}
@@ -37,22 +43,22 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 
 /* ── โครงหน้า ── */
 #app{max-width:560px;margin:0 auto;padding-bottom:calc(var(--nav-h) + var(--sb) + 1rem)}
-.top{position:sticky;top:0;z-index:20;background:rgba(238,243,249,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:calc(.6rem + var(--st)) 1rem .6rem;display:flex;align-items:center;gap:.6rem}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding:calc(.6rem + var(--st)) 1rem .6rem;display:flex;align-items:center;gap:.6rem}
 .brand{display:flex;align-items:center;gap:.55rem;flex:1;min-width:0}
 .brand img{width:2.2rem;height:2.2rem;border-radius:.65rem}
 .brand b{font-size:1.15rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sync{display:flex;align-items:center;gap:.35rem;padding:.4rem .75rem;border-radius:99px;font-size:.8rem;font-weight:700;white-space:nowrap;background:var(--ok-soft);color:var(--ok)}
+.sync{display:flex;align-items:center;gap:.35rem;padding:.4rem .75rem;border-radius:99px;font-size:.85rem;font-weight:700;white-space:nowrap;background:var(--ok-soft);color:var(--ok);min-height:2.75rem}
 .sync.wait{background:var(--warn-soft);color:var(--warn)}
 .sync.bad{background:var(--bad-soft);color:var(--bad)}
 .sync.busy{background:var(--pri-soft);color:var(--pri)}
 .sync .dot{width:.55rem;height:.55rem;border-radius:50%;background:currentColor}
 .sync.busy .dot{animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.25}}
-.view{display:none;padding:.25rem 1rem 1rem;animation:fade .25s ease}
+.view{display:none;padding:.25rem 1rem 1rem}
 .view.on{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}}
-.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:1rem;margin-bottom:.9rem}
-.h2{font-size:1.05rem;font-weight:800;margin:1.2rem .2rem .6rem;display:flex;align-items:center;gap:.4rem}
+/* พื้นผิวใช้เส้นขอบอย่างเดียว (ไม่ซ้อนเงา) — เงาเก็บไว้ให้สิ่งที่ลอยจริง: แผ่นเลื่อนขึ้น, แจ้งเตือน */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--line);padding:1rem;margin-bottom:.9rem}
+.h2{font-size:1.05rem;font-weight:800;margin:1.4rem .2rem .55rem;display:flex;align-items:center;gap:.4rem;line-height:1.35}
 .muted{color:var(--muted)}
 .small{font-size:.85rem}
 
@@ -64,34 +70,30 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .nav button.on span{background:var(--pri-soft);border-radius:99px;padding:0 .7rem}
 
 /* ── หน้าแรก ── */
-.hero{background:linear-gradient(140deg,#0848A8 0%,#0B5FD7 45%,#1F8BF0 100%);color:#fff;border-radius:24px;padding:1.1rem;margin-bottom:.9rem;box-shadow:0 10px 30px rgba(11,95,215,.28);position:relative;overflow:hidden}
-.hero::after{content:"";position:absolute;right:-3rem;top:-3rem;width:10rem;height:10rem;border-radius:50%;background:rgba(255,255,255,.08)}
-.cycle{display:inline-flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.18);padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.9rem;color:#fff}
-.hero-row{display:flex;align-items:center;gap:1rem;margin-top:.8rem}
-.ring{width:6.2rem;height:6.2rem;flex-shrink:0;position:relative}
-.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring .txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
-.ring .txt b{font-size:1.5rem;font-weight:800}
-.ring .txt span{font-size:.75rem;opacity:.9}
-.hero-stat b{display:block;font-size:1.6rem;font-weight:800;line-height:1.15}
-.hero-stat span{font-size:.9rem;opacity:.92}
-.hero-left{font-size:.95rem;font-weight:800;background:rgba(255,255,255,.18);border-radius:99px;padding:.2rem .8rem;margin-top:.35rem;display:inline-block}
-.hero{padding:.9rem 1rem}
-.hero-row{margin-top:.6rem}
-.ring{width:5.2rem;height:5.2rem}
-.ring .txt b{font-size:1.35rem}
-.hero-stat{display:grid;grid-template-columns:auto auto;column-gap:1rem;align-items:baseline}
-.hero-stat span{grid-row:1}
-.hero-stat b{grid-row:2;font-size:1.4rem}
-.sec{font-size:.95rem;font-weight:800;color:var(--muted);margin:.9rem .3rem .45rem;display:flex;justify-content:space-between}
+/* แถบความคืบหน้า: เล็กพอให้รายชื่อบ้าน (งานหลัก) ได้พื้นที่จอส่วนใหญ่ */
+.prog{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:.6rem .9rem .75rem;margin-bottom:.7rem}
+.prog-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;column-gap:.6rem}
+.top .cycle{font-size:1.1rem;flex:1;justify-content:flex-start}
+.cycle{display:inline-flex;align-items:center;gap:.25rem;font-weight:800;font-size:.95rem;color:var(--pri);min-height:2.75rem;padding:0 .2rem;margin-left:-.2rem;white-space:nowrap}
+.prog-money{font-weight:800;font-size:1.05rem;white-space:nowrap}
+.prog-money small{font-weight:600;color:var(--muted);font-size:.85rem;margin-right:.3rem}
+.prog-line{display:flex;align-items:baseline;gap:.5rem;line-height:1.35;min-width:0;white-space:nowrap}
+.prog-line b{font-size:1.3rem;font-weight:800}
+.prog-line span{color:var(--muted);font-weight:600}
+.bar{height:.7rem;border-radius:99px;background:#DCE4EE;margin-top:.5rem;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pri);border-radius:99px;transition:width .4s ease}
+.prog.alldone .bar i{background:var(--ok)}
+.sec{font-size:.95rem;font-weight:800;color:var(--muted);margin:.9rem .3rem .45rem;display:flex;justify-content:space-between;line-height:1.35}
 .sec.ok{color:var(--ok)}
 .sec.warn{color:var(--warn);background:var(--warn-soft);border-radius:12px;padding:.5rem .8rem;margin:.6rem 0 .5rem}
 .back-cycle{background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:.6rem .9rem;font-weight:700;margin-bottom:.8rem;font-size:.95rem}
 
-.chips{display:flex;gap:.5rem;overflow-x:auto;padding:.1rem .1rem .5rem;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;padding:.5rem .95rem;border-radius:99px;background:#fff;border:2px solid var(--line);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:.4rem;min-height:2.75rem}
-.chip.on{border-color:var(--pri);background:var(--pri-soft);color:var(--pri)}
+/* ปุ่มเลือกบ่อเป็นตาราง — เห็นครบทุกบ่อ ไม่ซ่อนไว้นอกจอให้ต้องรู้ว่าปัดข้าง */
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.6rem,1fr));gap:.4rem;padding:.1rem 0 .4rem}
+.chip{padding:.3rem .5rem;border-radius:12px;background:#fff;border:2px solid var(--line2);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:2.75rem;white-space:nowrap;min-width:0}
+.chip.on{border-color:var(--pri);background:var(--pri);color:#fff}
+.chip.on small{color:#fff}
+.chip.on i{box-shadow:0 0 0 2px #fff}
 .chip i{width:.65rem;height:.65rem;border-radius:50%;display:inline-block}
 .chip small{font-weight:600;color:var(--muted);font-size:.8rem}
 
@@ -100,40 +102,50 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .search input:focus{border-color:var(--pri)}
 .search .ic{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--muted)}
 .search .x{position:absolute;right:.4rem;top:50%;transform:translateY(-50%);width:2.6rem;height:2.6rem;display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.search input{height:3.6rem;font-size:1.1rem;border-color:#B9CCE4}
+.search input{height:3.6rem;font-size:1.1rem;border-color:var(--line2)}
+.search input::placeholder{color:#5F6F82;opacity:1}
 .search.has-mic input{padding-right:7.4rem}
 .search.has-mic .x{right:6.6rem}
 .smic{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);height:2.9rem;padding:0 .8rem;border-radius:12px;background:var(--pri);color:#fff;font-weight:800;font-size:.9rem;display:flex;align-items:center;gap:.25rem}
 .smic.on{background:var(--bad);animation:pulse 1.2s infinite}
 
-.list{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-.row{width:100%;display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--line);min-height:4rem}
+.list{background:#fff;border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
+.row{width:100%;display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;text-align:left;border-bottom:1px solid var(--line);min-height:4rem}
 .row:last-child{border-bottom:0}
-.row:active{background:var(--bg)}
+.row:active{background:var(--pri-soft)}
 .st{width:2.3rem;height:2.3rem;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800}
-.st.p{border:2.5px dashed #9AAFC7;color:#9AAFC7}
+.st.p{border:2.5px dashed #6B7F95;color:#6B7F95}
 .st.d{background:var(--ok);color:#fff}
-.st.n{background:#CBD5E1;color:#334155;font-size:.8rem}
+.st.n{background:#DCE4EE;color:var(--ink);font-size:.8rem;border:2px solid #6B7F95}
 .row .mid{flex:1;min-width:0}
-.row .nm{font-weight:700;font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .sub{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm{font-weight:700;font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.row .sub{font-size:.88rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
 .row .amt{font-weight:800;white-space:nowrap;text-align:right}
-.row .amt small{display:block;font-weight:600;font-size:.78rem;color:var(--muted)}
+.row .amt small{display:block;font-weight:600;font-size:.8rem;color:var(--muted)}
+/* ชื่อบ่อด้านขวาของบ้านที่ยังไม่จด (แทนการต่อท้ายด้วยจุดกลาง) */
+.row .wl{font-size:.82rem;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:.3rem;color:var(--muted);flex-shrink:0}
+.row .wl i{width:.6rem;height:.6rem;border-radius:50%;display:inline-block}
 .empty{text-align:center;padding:2rem 1rem;color:var(--muted)}
-.empty .e{font-size:2.6rem;margin-bottom:.3rem}
+.empty .e{color:var(--line2);margin-bottom:.4rem}
+.empty .e svg.i{width:2.6rem;height:2.6rem;stroke-width:1.8}
 
 /* ── ปุ่ม ── */
 .btn{width:100%;min-height:3.4rem;border-radius:16px;font-weight:800;font-size:1.05rem;display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1rem;transition:transform .12s,opacity .2s}
 .btn:active:not(:disabled){transform:scale(.97)}
-.btn:disabled{opacity:.45}
-.b-pri{background:var(--pri);color:#fff;box-shadow:0 6px 16px rgba(11,95,215,.3)}
-.b-ok{background:var(--ok);color:#fff;box-shadow:0 6px 16px rgba(17,130,63,.3)}
-.b-line{background:#06C755;color:#fff;box-shadow:0 6px 16px rgba(6,199,85,.3)}
+.btn:disabled{opacity:.5}
+/* สีเต็ม = ปุ่มหลักของหน้าจอเท่านั้น · ปุ่มรองเป็นสีขาวขอบเทา (สีเขียว LINE ตัวขาว ได้แค่ 2.3:1 จึงไม่ใช้) */
+.b-pri{background:var(--pri);color:#fff}
+.b-ok{background:var(--ok);color:#fff}
 .b-soft{background:var(--pri-soft);color:var(--pri)}
-.b-ghost{background:#fff;border:2px solid var(--line);color:var(--ink)}
-.b-print{background:#1f2937;color:#fff;box-shadow:0 6px 16px rgba(31,41,55,.28)}
-.btn:disabled{opacity:.6}
+.b-ghost{background:#fff;border:2px solid var(--line2);color:var(--ink)}
 .b-bad{background:var(--bad-soft);color:var(--bad)}
+.btn:focus-visible{outline-offset:3px}
+/* ปุ่มรอง 2–3 ปุ่มเรียงกัน: ไอคอนบน ข้อความล่าง */
+.acts{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.5rem}
+.act{background:#fff;border:2px solid var(--line2);border-radius:14px;min-height:4.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;font-weight:800;font-size:.95rem;color:var(--ink);padding:.4rem .3rem;line-height:1.3}
+.act svg.i{width:1.5rem;height:1.5rem;color:var(--pri)}
+.act:active:not(:disabled){background:var(--pri-soft)}
+.act:disabled{opacity:.6}
 .btns{display:flex;gap:.6rem}
 .btns>*{flex:1}
 .link{color:var(--pri);font-weight:700;padding:.6rem .4rem;min-height:2.75rem;display:inline-flex;align-items:center;gap:.3rem}
@@ -143,33 +155,38 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .layer.on{display:flex;animation:up .25s ease}
 @keyframes up{from{transform:translateY(24px);opacity:0}}
 .m-top{display:flex;align-items:center;gap:.4rem;padding:calc(.5rem + var(--st)) .6rem .3rem}
-.iconbtn{width:3rem;height:3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;box-shadow:var(--shadow);flex-shrink:0}
+.iconbtn{width:3rem;height:3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line2);flex-shrink:0}
 .iconbtn:disabled{opacity:.35}
 .m-pos{flex:1;text-align:center;font-weight:700;color:var(--muted);font-size:.9rem}
 .m-body{flex:1;display:flex;flex-direction:column;padding:0 1rem calc(.4rem + var(--sb));overflow-y:auto;gap:.5rem}
 .m-body>*{flex-shrink:0}
 .m-body>.pad{flex-shrink:1}
-.m-name{font-size:1.45rem;font-weight:800;line-height:1.25}
+.m-name{font-size:1.45rem;font-weight:800;line-height:1.35}
 .m-meta{display:flex;gap:.4rem;margin-top:.3rem;align-items:center;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
 .m-meta::-webkit-scrollbar{display:none}
 .m-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tag{padding:.15rem .65rem;border-radius:99px;font-size:.82rem;font-weight:700;background:var(--pri-soft);color:var(--pri)}
 .tag.ok{background:var(--ok-soft);color:var(--ok)}
 .tag.warn{background:var(--warn-soft);color:var(--warn)}
-.reads{display:grid;grid-template-columns:1fr 1.25fr;gap:.6rem}
-.rbox{background:#fff;border-radius:18px;padding:.6rem .8rem;box-shadow:var(--shadow);min-width:0}
-.rbox label{display:block;font-size:.82rem;font-weight:700;color:var(--muted)}
-.rbox .v{font-size:1.7rem;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
-.rbox.now .v.long{font-size:1.55rem}
-.rbox.now{border:3px solid var(--pri)}
-.rbox.now .v{color:var(--pri);font-size:2.1rem;min-height:2.5rem}
-.rbox.now .v .ph{color:#B6C4D6;font-size:1.2rem;font-weight:700}
-.rbox.now .v::after{content:"";display:inline-block;width:3px;height:1.6rem;background:var(--pri);margin-left:3px;vertical-align:-.15rem;animation:pulse 1s infinite}
-.rbox button{font-size:.8rem;font-weight:700;color:var(--pri);padding:.1rem 0}
+/* ── หน้าปัดมิเตอร์: เลขแต่ละหลักอยู่ในช่องของตัวเอง เหมือนวงล้อตัวเลขบนมิเตอร์น้ำจริง
+ *   ครั้งก่อนอยู่บน ครั้งนี้อยู่ล่าง หลักตรงกันเป็นคอลัมน์ → เทียบกับมิเตอร์ตรงหน้าได้ทีละหลัก ── */
+.dial{background:#fff;border:3px solid var(--brass);border-radius:18px;padding:.55rem .7rem .6rem;display:grid;grid-template-columns:auto 1fr;column-gap:.6rem;row-gap:.35rem;align-items:center}
+.dial-lbl{font-size:.88rem;font-weight:700;color:var(--muted);line-height:1.3;white-space:nowrap}
+.dial-lbl b{display:block;color:var(--ink);font-size:.95rem}
+.dial-lbl button{display:block;color:var(--pri);font-weight:800;font-size:.85rem;min-height:1.9rem;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.drums{display:flex;justify-content:flex-end;gap:.25rem;min-width:0}
+.drum{flex:0 1 2.3rem;min-width:0;height:2.9rem;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.drums.prev .drum{height:2.4rem;font-size:1.4rem;background:#EEF2F6;color:var(--ink);border:1px solid var(--line)}
+.drums.prev .drum.blank{background:transparent;border-color:transparent}
+.drums.now .drum{background:var(--drum);color:#fff}
+.drums.now .drum.slot{background:#fff;border:2px dashed #6B7F95}
+.drums.now .drum.blank{background:transparent}
+.drums.now .drum.cursor{background:#fff;border:2.5px solid var(--pri);box-shadow:inset 0 -4px 0 var(--pri);animation:pulse 1.1s infinite}
+.drums.now.err .drum:not(.slot):not(.cursor):not(.blank){background:var(--bad)}
 /* ความสูงคงที่ — ปุ่มตัวเลขด้านล่างต้องไม่ขยับเวลาข้อความเปลี่ยน (กันกดพลาด) */
-.result{border-radius:18px;padding:.5rem 1rem;background:#fff;box-shadow:var(--shadow);height:5.4rem;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
-.result .big{font-size:1.65rem;font-weight:800;color:var(--ok);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.result .calc{font-size:.9rem;color:var(--muted);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.result{border-radius:16px;padding:.45rem 1rem;background:#fff;border:1px solid var(--line);height:5.4rem;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.result .big{font-size:1.6rem;font-weight:800;color:var(--ok);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result .calc{font-size:.9rem;color:var(--muted);font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .result.err{background:var(--bad-soft)} .result.err .big{color:var(--bad);font-size:1.15rem}
 .result.zero .big{color:var(--muted);font-size:1.25rem}
 .result.warn{background:var(--warn-soft)} .result.warn .calc{color:var(--warn);font-weight:800}
@@ -178,9 +195,9 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .result.swap .big{font-size:1.1rem}
 .wtag{display:inline-block;font-size:.78rem;font-weight:800;padding:.05rem .5rem;border-radius:99px;margin-left:.35rem;vertical-align:.1rem}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:.5rem;flex:1 1 0;min-height:min(15rem,40vh)}
-.key{background:#fff;border-radius:16px;font-size:1.75rem;font-weight:800;box-shadow:0 2px 0 #CCD8E6,0 4px 10px rgba(15,27,45,.06);min-height:0;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:transform .08s,background .08s}
-.key:active{transform:translateY(2px);box-shadow:0 0 0 #CCD8E6;background:var(--pri-soft)}
-.key.fn{background:#E4EBF4;font-size:1rem;color:var(--ink)}
+.key{background:#fff;border-radius:14px;font-size:1.75rem;font-weight:800;border:1px solid var(--line);box-shadow:0 3px 0 #C3CFDC;min-height:0;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:transform .08s,background .08s}
+.key:active{transform:translateY(3px);box-shadow:0 0 0 #C3CFDC;background:var(--pri-soft)}
+.key.fn{background:#DCE4EE;font-size:1rem;color:var(--ink)}
 .key.mic{color:var(--pri)}
 .key.mic.on{background:var(--bad);color:#fff;animation:pulse 1.2s infinite}
 .key svg.i{width:1.7rem;height:1.7rem}
@@ -192,13 +209,13 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 .tick{width:4.6rem;height:4.6rem;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto .5rem;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
 .tick svg.i{width:2.6rem;height:2.6rem;stroke-width:3}
 @keyframes pop{from{transform:scale(.3);opacity:0}}
-.done-head b{display:block;font-size:1.5rem;font-weight:800}
+.done-head b{display:block;font-size:1.5rem;font-weight:800;line-height:1.35}
 .done-head span{color:var(--muted);font-weight:600}
 .done-body{flex:1;overflow-y:auto;padding:.3rem 1rem}
-.rcpt{display:block;width:100%;max-width:330px;margin:0 auto;border-radius:10px;box-shadow:var(--shadow);background:#fff}
-.done-foot{padding:.7rem 1rem calc(.8rem + var(--sb));display:flex;flex-direction:column;gap:.55rem;background:var(--bg)}
-.next-btn{min-height:4rem;font-size:1.2rem}
-.next-btn span{font-weight:600;font-size:.9rem;opacity:.95;display:block}
+.rcpt{display:block;width:100%;max-width:330px;margin:0 auto;border-radius:6px;border:1px solid var(--line);background:#fff}
+.done-foot{padding:.7rem 1rem calc(.8rem + var(--sb));display:flex;flex-direction:column;gap:.6rem;background:var(--bg);border-top:1px solid var(--line)}
+.next-btn{min-height:4rem;font-size:1.2rem;line-height:1.35}
+.next-btn span{font-weight:600;font-size:.9rem;display:block}
 
 /* ── แผ่นเลื่อนขึ้น (เมนู/ฟอร์ม/ยืนยัน) ── */
 #sheet{position:fixed;inset:0;z-index:85;background:rgba(15,27,45,.45);display:none;align-items:flex-end;justify-content:center}
@@ -228,12 +245,14 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 /* ── สรุป ── */
 .mnav{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem}
 .mnav b{flex:1;text-align:center;font-size:1.2rem;font-weight:800}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem}
-.stat{background:#fff;border-radius:18px;padding:.8rem;box-shadow:var(--shadow)}
-.stat span{font-size:.85rem;font-weight:700;color:var(--muted)}
-.stat b{display:block;font-size:1.4rem;font-weight:800;line-height:1.25}
-.stat.full{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
-.stat.full b{font-size:1.7rem}
+/* สรุปเงิน: แผ่นเดียวแบบสมุดบัญชี รับ − จ่าย = เหลือ (แทนการ์ด 3 ใบเท่ากัน) */
+.ledger{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:.3rem 1rem;margin-bottom:.8rem}
+.ledger .ln{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.55rem 0;border-bottom:1px solid var(--line)}
+.ledger .ln span{font-weight:700;color:var(--muted)}
+.ledger .ln b{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums}
+.ledger .ln.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:-1px}
+.ledger .ln.total span{color:var(--ink)}
+.ledger .ln.total b{font-size:1.7rem}
 .wellrow{padding:.6rem 0;border-bottom:1px solid var(--line)}
 .wellrow:last-child{border-bottom:0}
 .wellrow .t{display:flex;justify-content:space-between;gap:.5rem;font-weight:700}
@@ -242,7 +261,7 @@ svg.i{width:1.3em;height:1.3em;flex-shrink:0;fill:none;stroke:currentColor;strok
 /* ── ตั้งค่า ── */
 .seg{display:flex;background:var(--bg);border-radius:14px;padding:.25rem;gap:.25rem}
 .seg button{flex:1;min-height:3rem;border-radius:11px;font-weight:800;color:var(--muted)}
-.seg button.on{background:#fff;color:var(--pri);box-shadow:var(--shadow)}
+.seg button.on{background:#fff;color:var(--pri);border:2px solid var(--pri)}
 .seg button:nth-child(1){font-size:.9rem} .seg button:nth-child(2){font-size:1.05rem} .seg button:nth-child(3){font-size:1.25rem}
 details.admin summary{font-weight:800;padding:.4rem 0;cursor:pointer;color:var(--muted);list-style:none;min-height:2.75rem;display:flex;align-items:center;gap:.4rem}
 details.admin summary::-webkit-details-marker{display:none}
@@ -260,14 +279,20 @@ details.admin summary::-webkit-details-marker{display:none}
 #setup img{width:4.5rem;height:4.5rem;border-radius:1.2rem;display:block;margin:0 auto .7rem}
 
 /* ── แจ้งเตือนสั้น ── */
-#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--sb) + 1rem);transform:translate(-50%,1rem);background:#16202E;color:#fff;padding:.8rem 1.2rem;border-radius:16px;font-weight:700;opacity:0;transition:all .25s;z-index:90;pointer-events:none;width:max-content;max-width:calc(100% - 2rem);text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--sb) + 1rem);transform:translate(-50%,1rem);background:var(--drum);color:#fff;padding:.8rem 1.1rem;border-radius:14px;font-weight:700;opacity:0;transition:all .25s;z-index:90;pointer-events:none;width:max-content;max-width:calc(100% - 2rem);box-shadow:0 8px 24px rgba(18,38,58,.3);display:flex;align-items:center;gap:.55rem;line-height:1.4}
+#toast svg.i{width:1.4rem;height:1.4rem}
+#toast.ok svg.i{color:#7FE0A4} #toast.warn svg.i{color:#FFC46B}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .spin{width:1em;height:1em;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:rot .8s linear infinite;display:inline-block}
 @keyframes rot{to{transform:rotate(360deg)}}
 @media (min-height:760px){ .key{font-size:1.9rem} }
 /* ตัวใหญ่มาก / จอเตี้ย: ย่อแป้นตัวเลขลง ให้ปุ่มบันทึกยังอยู่ในจอเสมอ */
 html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html.t-xl .m-name{font-size:1.3rem}
-@media (max-height:700px){ .pad{min-height:min(11.5rem,33vh)} .result{height:4.7rem} .m-name{font-size:1.3rem} .m-top{padding-top:calc(.3rem + var(--st))} .iconbtn{width:2.75rem;height:2.75rem} .rbox{padding:.45rem .8rem} }
+@media (max-height:700px){ .pad{min-height:min(11rem,32vh)} .result{height:4.3rem} .m-name{font-size:1.3rem} .m-top{padding-top:calc(.3rem + var(--st))} .iconbtn{width:2.75rem;height:2.75rem}
+  .m-body{gap:.4rem}
+  .dial{padding:.35rem .6rem;row-gap:.25rem} .drum{height:2.4rem;font-size:1.45rem} .drums.prev .drum{height:2rem;font-size:1.15rem}
+  .dial-lbl button{display:inline;min-height:0;margin-left:.3rem}   /* "แก้เลขนี้" อยู่บรรทัดเดียวกับ "ครั้งก่อน" */
+  html.t-xl .pad{min-height:min(9.5rem,26vh)} html.t-xl .result{height:4.3rem} html.t-xl .m-name{font-size:1.15rem} }
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
@@ -293,26 +318,21 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
 <div id="demo-bar" class="demo-bar hidden">โหมดทดลอง — ข้อมูลไม่ถูกบันทึกจริง <button data-act="exitDemo">ออก</button></div>
 <div id="app">
   <header class="top">
-    <div class="brand"><img src="icon-192.png" alt="" /><b id="brand-name">ประปาชุกหว้า</b></div>
+    <!-- หน้าจดมิเตอร์: ปุ่มเลือกรอบเดือนแทนชื่อแอป (ระหว่างทำงานไม่ต้องเห็นชื่อแอป) · หน้าอื่น: ชื่อแอป -->
+    <button class="cycle" id="cycle-btn" data-act="pickCycle" aria-label="เปลี่ยนรอบเดือน"><span id="cycle-txt">-</span><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="brand hidden" id="brand"><img src="icon-192.png" alt="" /><b id="brand-name">ประปาชุกหว้า</b></div>
     <button class="sync" id="sync" data-act="syncNow" aria-live="polite"><span class="dot"></span><span id="sync-txt">-</span></button>
   </header>
 
   <!-- หน้า 1: จดมิเตอร์ -->
   <main class="view on" id="v-home">
     <div id="home-back" class="back-cycle hidden"></div>
-    <section class="hero">
-      <button class="cycle" data-act="pickCycle"><span id="cycle-txt">-</span> <svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="hero-row">
-        <div class="ring" aria-hidden="true">
-          <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,.22)" stroke-width="11" fill="none"/><circle id="ring-arc" cx="50" cy="50" r="42" stroke="#fff" stroke-width="11" fill="none" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9" style="transition:stroke-dashoffset .6s ease"/></svg>
-          <div class="txt"><b id="ring-n">0</b><span id="ring-of">จาก 0</span></div>
-        </div>
-        <div class="hero-stat">
-          <span>จดแล้ว</span><b id="hero-done">0 หลัง</b>
-          <span>เงินค่าน้ำ</span><b id="hero-money">0 บาท</b>
-          <div class="hero-left" id="hero-left" style="grid-column:1/-1"></div>
-        </div>
+    <section class="prog" id="prog" aria-label="ความคืบหน้ารอบนี้">
+      <div class="prog-top">
+        <div class="prog-line"><b id="prog-done">0 / 0 หลัง</b><span id="prog-left"></span></div>
+        <div class="prog-money"><span id="prog-money">0 บาท</span></div>
       </div>
+      <div class="bar" role="progressbar" aria-label="จดแล้ว" aria-valuemin="0" id="prog-bar"><i id="prog-fill" style="width:0"></i></div>
     </section>
 
     <div class="search" id="search-box">
@@ -332,12 +352,12 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
       <b id="sum-label">-</b>
       <button class="iconbtn" data-act="sumMonth" data-d="1" id="sum-next" aria-label="เดือนถัดไป"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
-    <div class="stats">
-      <div class="stat"><span>รายรับ</span><b id="s-in" style="color:var(--ok)">0</b></div>
-      <div class="stat"><span>ค่าใช้จ่าย</span><b id="s-out" style="color:var(--bad)">0</b></div>
-      <div class="stat full"><span>คงเหลือ (บาท)</span><b id="s-net">0</b></div>
+    <div class="ledger">
+      <div class="ln"><span>รายรับ</span><b id="s-in">0</b></div>
+      <div class="ln"><span>ค่าใช้จ่าย</span><b id="s-out">0</b></div>
+      <div class="ln total"><span>คงเหลือ (บาท)</span><b id="s-net">0</b></div>
     </div>
-    <button class="btn b-line" data-act="shareSummary"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>ส่งสรุปเดือนนี้ทาง LINE</button>
+    <button class="btn b-ghost" data-act="shareSummary"><svg class="i" viewBox="0 0 24 24" style="color:var(--pri)"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>ส่งสรุปเดือนนี้ทาง LINE</button>
 
     <div class="h2">ความคืบหน้า</div>
     <div class="card" id="s-progress"></div>
@@ -348,12 +368,21 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
     <div class="h2">รายรับย้อนหลัง 6 เดือน</div>
     <div class="card chart" id="s-chart"></div>
 
-    <div class="h2" style="justify-content:space-between"><span>ค่าใช้จ่าย</span>
-      <button class="btn b-soft" style="width:auto;min-height:2.8rem;font-size:.95rem" data-act="addExpense"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>เพิ่ม</button></div>
-    <div class="list" id="s-exp"></div>
-
     <div class="h2">ใบเสร็จเดือนนี้ <small class="muted" style="font-weight:600">(แตะเพื่อดู/แก้ไข)</small></div>
     <div class="list" id="s-bills"></div>
+  </main>
+
+  <!-- หน้า: ค่าใช้จ่าย (แยกจากสรุป — เดือนเดียวกับหน้าสรุป) -->
+  <main class="view" id="v-exp">
+    <div class="mnav">
+      <button class="iconbtn" data-act="sumMonth" data-d="-1" aria-label="เดือนก่อน"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <b id="e-label">-</b>
+      <button class="iconbtn" data-act="sumMonth" data-d="1" id="e-next" aria-label="เดือนถัดไป"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <button class="btn b-pri" data-act="addExpense" style="min-height:3.8rem;font-size:1.15rem"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>เพิ่มค่าใช้จ่าย</button>
+    <div class="ledger" style="margin-top:.8rem" id="e-cats"></div>
+    <div class="h2" style="justify-content:space-between"><span>รายการ</span><span class="muted" style="font-weight:700;font-size:.95rem" id="e-count"></span></div>
+    <div class="list" id="e-list"></div>
   </main>
 
   <!-- หน้า 3: ตั้งค่า -->
@@ -398,6 +427,7 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
 
 <nav class="nav" aria-label="เมนูหลัก">
   <button data-act="nav" data-v="home" class="on" id="n-home"><svg class="i" viewBox="0 0 24 24"><path d="M12 2.8C8.6 7.1 5.6 10.6 5.6 14a6.4 6.4 0 0 0 12.8 0c0-3.4-3-6.9-6.4-11.2z"/></svg><span>จดมิเตอร์</span></button>
+  <button data-act="nav" data-v="exp" id="n-exp"><svg class="i" viewBox="0 0 24 24"><path d="M3 7.5h16a2 2 0 0 1 2 2V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7.5L15 3.5v4"/><circle cx="16.5" cy="14.2" r="1.3"/></svg><span>ค่าใช้จ่าย</span></button>
   <button data-act="nav" data-v="sum" id="n-sum"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>สรุปเดือน</span></button>
   <button data-act="nav" data-v="set" id="n-set"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.3"/><circle cx="10" cy="17" r="2.3"/></svg><span>ตั้งค่า</span></button>
 </nav>
@@ -414,9 +444,11 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
       <div class="m-name" id="m-name">-</div>
       <div class="m-meta" id="m-meta"></div>
     </div>
-    <div class="reads">
-      <div class="rbox"><label>ครั้งก่อน</label><div class="v" id="m-prevv">0</div><button data-act="editPrev">แก้เลขนี้</button></div>
-      <div class="rbox now"><label>เลขมิเตอร์ครั้งนี้</label><div class="v" id="m-cur"></div></div>
+    <div class="dial" role="group" aria-label="เลขมิเตอร์">
+      <div class="dial-lbl">ครั้งก่อน<button data-act="editPrev">แก้เลขนี้</button></div>
+      <div class="drums prev" id="m-prevv" aria-label="เลขครั้งก่อน"></div>
+      <div class="dial-lbl"><b>ครั้งนี้</b></div>
+      <div class="drums now" id="m-cur" aria-live="polite" aria-label="เลขครั้งนี้"></div>
     </div>
     <div class="result" id="m-result" aria-live="polite"></div>
     <div class="pad" id="pad">
@@ -443,10 +475,10 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
   </div>
   <div class="done-body"><img class="rcpt" id="d-img" alt="ใบเสร็จ" /></div>
   <div class="done-foot">
-    <button class="btn b-print hidden" id="d-print" data-act="printReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3"/><path d="M7 14h10v7H7z"/></svg><span id="d-print-txt">พิมพ์ใบเสร็จ</span></button>
-    <div class="btns">
-      <button class="btn b-line" data-act="shareReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>ส่งใบเสร็จ</button>
-      <button class="btn b-ghost" data-act="saveImg"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>เก็บรูป</button>
+    <div class="acts" id="d-acts">
+      <button class="act hidden" id="d-print" data-act="printReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3"/><path d="M7 14h10v7H7z"/></svg><span id="d-print-txt">พิมพ์</span></button>
+      <button class="act" data-act="shareReceipt"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>ส่ง LINE</button>
+      <button class="act" data-act="saveImg"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>เก็บรูป</button>
     </div>
     <button class="btn b-pri next-btn" id="d-next" data-act="doneNext"></button>
     <button class="btn b-ghost" id="d-close" data-act="doneHome">กลับหน้าแรก</button>
@@ -460,7 +492,7 @@ html.t-xl .pad{min-height:min(11.5rem,30vh)} html.t-xl .result{height:5rem} html
 <script>
 'use strict';
 /* ════════════════════════════════════════════════════════════
- *  ประปาหมู่บ้านชุกหว้า — V.5
+ *  ประปาหมู่บ้านชุกหว้า — V.6
  *  แนวคิด: ผู้ใช้ทำแค่ "กดเลขมิเตอร์ → บันทึก" ที่เหลือแอปทำให้เอง
  *  - บันทึกลงเครื่องทันที แล้วค่อยส่งขึ้น Google Sheet เบื้องหลัง (ไม่ต้องรอเน็ต)
  *  - ใบเสร็จวาดด้วย canvas ในตัว ไม่พึ่งไลบรารีภายนอก (ใช้ได้ยาว)
@@ -471,7 +503,8 @@ const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpST7wjd9xb
 const STORE_KEY = 'prapa_v4';
 const OLD_STORE_KEY = 'pwa_prapa_chukwa_v2';   // ข้อมูลจากรุ่นเดิม (ย้ายมาให้อัตโนมัติ)
 const KEEP_MONTHS = 24;                        // เก็บประวัติในเครื่องย้อนหลัง 24 เดือน
-const WELL_COLORS = ['#0B5FD7','#0E8F7E','#D9480F','#7B3FC4','#B7791F','#2F855A','#C2185B','#4A5568'];
+// สีบ่อ: ทุกสีใส่ตัวอักษรขาวได้ ≥ 4.5:1 (ใช้กับป้ายชื่อซ้ำ/ปุ่มบ่อที่เลือก)
+const WELL_COLORS = ['#0A57C2','#0B6E5F','#B03A0A','#6E35B5','#855407','#22703E','#AD1457','#455468'];
 const MAX_DIGITS = 7;
 
 const S = {   // ข้อมูลที่เก็บในเครื่อง
@@ -506,12 +539,25 @@ function vibrate(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch 
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
 let toastTimer = null;
+// สัญลักษณ์นำหน้าข้อความ (✓ ⚠️ 📶 🎤) → แปลงเป็นไอคอนชุดเดียวกับทั้งแอป แทนอีโมจิที่หน้าตาต่างกันแต่ละเครื่อง
+const TOAST_KIND = { '✓':'ok', '⚠️':'warn', '📶':'warn', '🎤':'mic' };
 function toast(msg, ms){
-  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  const t = $('toast');
+  let kind = '';
+  const text = String(msg).replace(/^(✓|⚠️|📶|🎤)\s*/u, (m, k) => { kind = TOAST_KIND[k]; return ''; });
+  const ic = kind === 'ok' ? 'check' : kind === 'warn' ? 'alert' : kind === 'mic' ? 'mic' : '';
+  t.className = kind;
+  t.innerHTML = (ic ? icon(ic) : '') + '<span>' + esc(text) + '</span>';
+  t.classList.add('on');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms || 2800);
 }
 
 const ICON = {
+  alert:'<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.3v.2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  house:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  inbox:'<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
+  swap:'<path d="M7 7h12l-3-3M17 17H5l3 3"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
   receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
@@ -784,9 +830,13 @@ function applyPending(){
 /* ════════════ ชั้นหน้าจอ + ปุ่มย้อนกลับของมือถือ ════════════ */
 const layers = [];
 let popWaiters = [];
+// ประวัติย้อนกลับของเบราว์เซอร์ค้างข้ามการโหลดหน้าใหม่ได้ → ติดรหัสรอบนี้ไว้ทุกช่อง
+// เจอช่องจากรอบก่อน (รหัสไม่ตรง) = ย้อนเลยชั้นแรกไปแล้ว ให้ปิดทุกชั้น
+const HIST_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+try { history.replaceState({ n: 0, sid: HIST_ID }, ''); } catch (e) {}
 function pushLayer(name, onClose){
   layers.push({ name, onClose });
-  history.pushState({ n: layers.length }, '');
+  history.pushState({ n: layers.length, sid: HIST_ID }, '');
 }
 function popTo(target){
   while (layers.length > target) { const l = layers.pop(); try { l.onClose(); } catch (err) { console.error(err); } }
@@ -803,7 +853,7 @@ function closeTop(){
     setTimeout(() => { const i = layers.indexOf(top); if (i >= 0) popTo(i); }, 800);
   });
 }
-window.addEventListener('popstate', e => popTo((e.state && e.state.n) || 0));
+window.addEventListener('popstate', e => popTo(e.state && e.state.sid === HIST_ID ? (e.state.n || 0) : 0));
 function topLayer(){ return layers.length ? layers[layers.length - 1].name : ''; }
 
 /* ── แผ่นเลื่อนขึ้น ── */
@@ -836,18 +886,17 @@ function renderHome(){
   let done = 0, money = 0;
   all.forEach(h => { const b = billOf(h.id, ym); if (b) { done++; if (b.status !== 'noaccess') money += Number(b.amount || 0); } });
   const pct = all.length ? done / all.length : 0;
-  $('ring-arc').style.strokeDashoffset = (263.9 * (1 - pct)).toFixed(1);
-  $('ring-n').textContent = done;
-  $('ring-of').textContent = 'จาก ' + all.length;
-  $('hero-done').textContent = done + ' หลัง';
-  $('hero-money').textContent = fmt(money) + ' บาท';
-  $('cycle-txt').textContent = 'รอบ ' + monthLabel(ym);
+  const left = all.length - done;
+  $('prog-fill').style.width = (pct * 100).toFixed(1) + '%';
+  $('prog-bar').setAttribute('aria-valuemax', all.length); $('prog-bar').setAttribute('aria-valuenow', done);
+  $('prog-done').textContent = `จดแล้ว ${done} / ${all.length} หลัง`;
+  $('prog-left').textContent = !all.length ? 'ยังไม่มีรายชื่อบ้าน' : left ? `เหลือ ${left}` : 'ครบทุกหลังแล้ว';
+  $('prog').classList.toggle('alldone', all.length > 0 && !left);
+  $('prog-money').textContent = 'ค่าน้ำรวม ' + fmt(money) + ' บาท';
+  $('cycle-txt').textContent = 'รอบ ' + monthLabel(ym, true);
   const back = $('home-back');
   back.classList.toggle('hidden', ym === thisMonth());
-  back.textContent = '⚠️ กำลังจดย้อนหลังของรอบ ' + monthLabel(ym) + ' — แตะที่ชื่อเดือนเพื่อเปลี่ยน';
-
-  const left = all.length - done;
-  $('hero-left').textContent = !all.length ? 'ยังไม่มีรายชื่อบ้าน' : left ? `เหลืออีก ${left} หลัง` : 'จดครบทุกหลังแล้ว 🎉';
+  back.textContent = 'กำลังจดย้อนหลังของรอบ ' + monthLabel(ym) + ' — แตะชื่อเดือนด้านบนเพื่อเปลี่ยน';
 
   // ปุ่มเลือกบ่อ (บอกจำนวนที่จดแล้ว/ทั้งหมด)
   const ws = wells();
@@ -856,7 +905,9 @@ function renderHome(){
     ws.map(w => {
       const hs = all.filter(h => (h.wellId || '_none') === w.id);
       const d = hs.filter(h => statusOf(h.id, ym) !== 'p').length;
-      return `<button class="chip ${UI.well === w.id ? 'on' : ''}" data-act="well" data-v="${esc(w.id)}"><i style="background:${w.color}"></i>${esc(w.name)} <small>${d}/${hs.length}</small></button>`;
+      // ตัดคำว่า "บ่อ" ซ้ำๆ ออกในปุ่ม (ให้ปุ่มเรียง 3 ช่องต่อแถวได้) — ชื่อเต็มอยู่ใน aria-label
+      const short = w.name.replace(/^บ่อ\s*/, '') || w.name;
+      return `<button class="chip ${UI.well === w.id ? 'on' : ''}" data-act="well" data-v="${esc(w.id)}" aria-label="${esc(w.name)} จดแล้ว ${d} จาก ${hs.length}"><i style="background:${w.color}"></i>${esc(short)} <small>${d}/${hs.length}</small></button>`;
     }).join('');
 
   renderHouseList();
@@ -928,8 +979,8 @@ function renderHouseList(){
   }
   const el = $('house-list');
   if (!S.houses.length && UI.pulling) { el.innerHTML = `<div class="list"><div class="empty"><span class="spin" style="font-size:2rem;color:var(--pri)"></span><p style="margin-top:.6rem">กำลังโหลดรายชื่อบ้าน…</p></div></div>`; return; }
-  if (!S.houses.length) { el.innerHTML = `<div class="list"><div class="empty"><div class="e">🏠</div>ยังไม่มีรายชื่อบ้าน<br><button class="link" data-act="syncNow">โหลดข้อมูลจาก Google Sheet</button></div></div>`; return; }
-  if (!list.length) { el.innerHTML = `<div class="list"><div class="empty"><div class="e">🔍</div>ไม่พบ "${esc(UI.q)}"<br><small>ลองพิมพ์แค่ชื่อต้น หรือบางส่วนของชื่อ</small></div></div>`; return; }
+  if (!S.houses.length) { el.innerHTML = `<div class="list"><div class="empty"><div class="e">${icon('house')}</div>ยังไม่มีรายชื่อบ้าน<br><button class="link" data-act="syncNow">โหลดรายชื่อจาก Google Sheet</button></div></div>`; return; }
+  if (!list.length) { el.innerHTML = `<div class="list"><div class="empty"><div class="e">${icon('search')}</div>ไม่พบ "${esc(UI.q)}"<br><small>ลองพิมพ์แค่ชื่อต้น หรือบางส่วนของชื่อ</small></div></div>`; return; }
   // ยังไม่จด (เรียงตามชื่อ ก-ฮ) แยกกับที่จดแล้ว — หน้างานจริงไม่ได้เดินตามลำดับ จึงเรียงให้หาง่ายแทน
   const byName = (a, b) => normName(a.h.name).localeCompare(normName(b.h.name), 'th');
   const rows = list.map(h => ({ h, st: statusOf(h.id, ym) }));
@@ -939,12 +990,14 @@ function renderHouseList(){
     const b = st === 'p' ? null : billOf(h.id, ym);
     const w = wellOf(h.wellId);
     const sub = st === 'p'
-      ? `ครั้งก่อน ${fmt(prevReadingFor(h, ym))}${(UI.well === 'all' || UI.q) && w ? ' · ' + esc(w.name) : ''}${h.address ? ' · ' + esc(h.address) : ''}`
+      ? `ครั้งก่อน ${fmt(prevReadingFor(h, ym))}${h.address ? ' บ้านเลขที่ ' + esc(h.address) : ''}`
       : st === 'n' ? 'ไม่มีการใช้น้ำ' : `${fmt(b.prevReading)} → ${fmt(b.currentReading)}`;
-    const right = st === 'd' ? `<div class="amt">${fmt(b.amount)} ฿<small>${fmt(b.units)} หน่วย</small></div>` : '';
-    const mark = st === 'd' ? icon('check') : st === 'n' ? '0' : '';
     // ชื่อซ้ำ → ป้ายบ่อสีเด่นข้างชื่อ จะได้ไม่เลือกผิดหลัง
     const dup = w && namesakes(h).length ? `<span class="wtag" style="background:${w.color};color:#fff">${esc(w.name)}</span>` : '';
+    // ยังไม่จด: ชื่อบ่ออยู่ขวามือ (เมื่อดูทุกบ่อ/ค้นหา) · จดแล้ว: ยอดเงิน
+    const right = st === 'd' ? `<div class="amt">${fmt(b.amount)} ฿<small>${fmt(b.units)} หน่วย</small></div>`
+      : st === 'p' && w && !dup && (UI.well === 'all' || UI.q) ? `<span class="wl"><i style="background:${w.color}"></i>${esc(w.name)}</span>` : '';
+    const mark = st === 'd' ? icon('check') : st === 'n' ? '0' : '';
     return `<button class="row" data-act="openHouse" data-id="${esc(h.id)}">
       <span class="st ${st}">${mark}</span>
       <span class="mid"><span class="nm" style="display:block">${esc(h.name)}${dup}</span><span class="sub" style="display:block">${sub}</span></span>${right}</button>`;
@@ -985,6 +1038,9 @@ function meterCalc(){
   const m = UI.meter;
   const cur = m.input === '' ? null : parseInt(m.input, 10);
   if (cur === null) return { state:'empty' };
+  // ยังกดไม่ครบหลักเท่าครั้งก่อน = กำลังพิมพ์ (ยังไม่ขึ้นเตือนสีแดง)
+  const need = String(Math.round(m.prev) || 0).length - m.input.length;
+  if (need > 0 && cur < m.prev) return { state:'typing', cur, need };
   if (cur < m.prev) return { state:'low', cur };
   const units = cur - m.prev;
   const existing = billOf(m.houseId, m.ym);
@@ -1013,13 +1069,13 @@ function renderMeter(){
     (namesakes(h).length ? `<span class="tag warn">ชื่อซ้ำ ${namesakes(h).length + 1} หลัง — ดูบ่อให้ถูก</span>` : '');
   const usual = stats ? ` (ปกติ ~${fmt(stats.avg)})` : '';
   res0();
-  $('m-prevv').textContent = fmt(m.prev);
-  $('m-cur').innerHTML = m.input === '' ? '<span class="ph">กดตัวเลข</span>' : esc(Number(m.input).toLocaleString('th-TH'));
-  $('m-cur').classList.toggle('long', m.input.length >= 6);
-
   const c = meterCalc(), res = $('m-result'), btn = $('m-save');
+  renderDrums(m.prev, m.input, c.state === 'low');
   if (c.state === 'empty') {
     res.innerHTML = `<div class="calc">ดูเลขบนมิเตอร์ แล้วกดตัวเลขด้านล่าง${stats ? `<br>บ้านนี้ปกติใช้ ~${fmt(stats.avg)} หน่วย/เดือน` : ''}</div>`;
+    btn.disabled = true; btn.textContent = 'บันทึก';
+  } else if (c.state === 'typing') {
+    res.innerHTML = `<div class="calc">กดต่ออีก ${c.need} หลัก${stats ? `<br>บ้านนี้ปกติใช้ ~${fmt(stats.avg)} หน่วย/เดือน` : ''}</div>`;
     btn.disabled = true; btn.textContent = 'บันทึก';
   } else if (c.state === 'low') {
     res.classList.add('err');
@@ -1033,26 +1089,51 @@ function renderMeter(){
     const tooHigh = !isNormalUsage(h.id, m.ym, c.units);
     if (tooHigh) res.classList.add('warn');
     res.innerHTML = `<div class="big">${fmt(c.amount)} บาท</div><div class="calc">` + (tooHigh
-      ? `⚠️ ใช้ ${fmt(c.units)} หน่วย สูงผิดปกติ${usual} — ตรวจเลขอีกครั้ง`
+      ? `ใช้ ${fmt(c.units)} หน่วย สูงผิดปกติ${usual} — ตรวจเลขอีกครั้ง`
       : `ใช้ ${fmt(c.units)} หน่วย × ${fmt(c.price)} บาท${usual}`) + '</div>';
     btn.disabled = false; btn.textContent = `บันทึก · ${fmt(c.amount)} บาท`;
   }
 
   // ชื่อซ้ำ: เลขนี้ไม่เข้ากับบ้านนี้ แต่เข้ากับบ้านชื่อเดียวกันอีกหลัง → ชวนเปลี่ยน (แตะกล่องผลลัพธ์)
-  if (c.state === 'low' || res.classList.contains('warn')) {
+  if (c.state === 'low' || c.state === 'typing' || res.classList.contains('warn')) {
     const alt = namesakeFor(h, m.ym, c.cur);
     if (alt) {
       const aw = wellOf(alt.h.wellId);
       res.classList.add('swap');
       res.dataset.act = 'switchHouse'; res.dataset.id = alt.h.id;
       res.setAttribute('role', 'button');
-      res.querySelector('.calc').innerHTML = `🔄 เลขนี้ตรงกับ <b>${esc(alt.h.name)} · ${esc(aw ? aw.name : '')}</b> (ใช้ ${fmt(alt.units)} หน่วย) — แตะที่นี่เพื่อเปลี่ยน`;
+      res.querySelector('.calc').innerHTML = `เลขนี้ตรงกับ <b>${esc(alt.h.name)} (${esc(aw ? aw.name : '')})</b> ใช้ ${fmt(alt.units)} หน่วย — แตะที่นี่เพื่อเปลี่ยนบ้าน`;
     }
   }
   function res0(){
     const r = $('m-result');
     r.className = 'result'; delete r.dataset.act; delete r.dataset.id; r.removeAttribute('role');
   }
+}
+
+/* หน้าปัดมิเตอร์: ช่องละ 1 หลัก
+ * - ครั้งก่อนชิดขวา (อย่างน้อย 4 ช่อง)
+ * - ครั้งนี้เริ่มพิมพ์ที่ "หลักแรกของครั้งก่อน" แล้วไล่ไปทางขวา → พิมพ์ครบแล้วหลักตรงกันเป็นคอลัมน์
+ *   ถ้าพิมพ์ยาวกว่าครั้งก่อน ช่องจะขยาย และหลักจะเหลื่อมกันให้เห็นทันทีว่าเกิน */
+function renderDrums(prev, input, isLow){
+  const p = String(Math.max(0, Math.round(prev) || 0));
+  const n = Math.max(p.length, input.length, 4);
+  const cell = (cls, d) => `<span class="drum ${cls}">${d === undefined ? '' : esc(d)}</span>`;
+  $('m-prevv').innerHTML = p.padStart(n, ' ').split('').map(d => d === ' ' ? cell('blank') : cell('', d)).join('');
+  const L = Math.max(p.length, input.length), start = n - L;
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const k = i - start;
+    if (k < 0) html += cell('blank');
+    else if (k < input.length) html += cell('', input[k]);
+    else if (k === input.length) html += cell('cursor');
+    else html += cell('slot');
+  }
+  const cur = $('m-cur');
+  cur.innerHTML = html;
+  cur.classList.toggle('err', !!isLow);
+  cur.setAttribute('aria-label', 'เลขครั้งนี้ ' + (input || 'ยังไม่ได้กด'));
+  $('m-prevv').setAttribute('aria-label', 'เลขครั้งก่อน ' + p);
 }
 
 // ใช้น้ำปกติไหม (เทียบค่าเฉลี่ยของบ้านนั้นเอง; ไม่มีประวัติ → เกิน 300 หน่วยถือว่าผิดปกติ)
@@ -1139,7 +1220,7 @@ function houseHistory(houseId){
       return `<button class="menu-btn" ${na ? '' : `data-act="viewBill" data-id="${esc(b.id)}"`} style="display:block">
         <span style="display:flex;justify-content:space-between;gap:.5rem"><span>${esc(monthLabel(monthOf(b.readDate)))}</span><span>${na ? 'ไม่ใช้น้ำ' : fmt(b.units) + ' หน่วย · ' + fmt(b.amount) + ' ฿'}</span></span>
         <span class="bar-mini"><i style="width:${Math.round((Number(b.units) || 0) / max * 100)}%"></i></span></button>`;
-    }).join('') : '<div class="empty"><div class="e">📭</div>ยังไม่มีประวัติ</div>'}
+    }).join('') : `<div class="empty"><div class="e">${icon('inbox')}</div>ยังไม่มีประวัติ — จะเห็นหลังจดมิเตอร์บ้านนี้ครั้งแรก</div>`}
     <button class="btn b-ghost" style="margin-top:.8rem" data-act="closeTop">ปิด</button>`);
 }
 
@@ -1331,7 +1412,7 @@ async function showDone(bill, fresh){
   $('d-sub').textContent = bill.houseName + (isNA ? '' : ' · ' + fmt(bill.amount) + ' บาท');
   $('d-img').classList.toggle('hidden', isNA);
   $('d-img').removeAttribute('src');
-  document.querySelector('#done .btns').classList.toggle('hidden', isNA);
+  $('d-acts').classList.toggle('hidden', isNA);
   $('d-print').classList.toggle('hidden', isNA || !CAN_BT_PRINT);
 
   // จดใหม่: ปุ่มเดียว กลับไปเลือกบ้านอื่น (หน้างานจริงไม่ได้เดินตามลำดับ) / ดูใบเสร็จเก่า: ปุ่มปิด
@@ -1340,7 +1421,7 @@ async function showDone(bill, fresh){
   const left = S.houses.filter(h => statusOf(h.id, UI.meter ? UI.meter.ym : UI.cycle) === 'p').length;
   nb.classList.toggle('hidden', !fresh);
   if (fresh) nb.innerHTML = !fromHome ? 'เสร็จ'
-    : left ? `<span>จดบ้านอื่น<span>เหลืออีก ${left} หลัง</span></span>` : '<span>จดครบทุกหลังแล้ว 🎉<span>กลับหน้าแรก</span></span>';
+    : left ? `<span>จดบ้านอื่น<span>เหลืออีก ${left} หลัง</span></span>` : '<span>จดครบทุกหลังแล้ว<span>กลับหน้าแรก</span></span>';
   $('d-close').textContent = 'ปิด';
   $('d-close').classList.toggle('hidden', fresh);
 
@@ -1477,7 +1558,7 @@ async function printReceipt(){
   if (BT.busy) return;
   const b = UI.done && S.bills.find(x => x.id === UI.done.billId); if (!b) return;
   const btn = $('d-print'), txt = $('d-print-txt');
-  BT.busy = true; btn.disabled = true; txt.textContent = 'กำลังเชื่อมต่อ…';
+  BT.busy = true; btn.disabled = true; txt.textContent = 'กำลังต่อ…';
   try {
     const ch = await btPrinter();   // เลือกเครื่องก่อนวาดรูป — Chrome ให้เปิดหน้าเลือกได้เฉพาะตอนเพิ่งกดปุ่ม
     txt.textContent = 'กำลังพิมพ์…';
@@ -1492,7 +1573,7 @@ async function printReceipt(){
     else if (e && e.name === 'NotFoundError') toast('⚠️ ไม่เจอเครื่องพิมพ์ — เปิดเครื่องพิมพ์ และเปิด Bluetooth/ตำแหน่งในมือถือ', 5000);
     else { BT.device = null; BT.ch = null; toast('⚠️ พิมพ์ไม่สำเร็จ — กดพิมพ์อีกครั้ง แล้วเลือกเครื่องพิมพ์ใหม่', 5000); }
   } finally {
-    BT.busy = false; btn.disabled = false; txt.textContent = 'พิมพ์ใบเสร็จ';
+    BT.busy = false; btn.disabled = false; txt.textContent = 'พิมพ์';
   }
 }
 
@@ -1535,12 +1616,6 @@ function renderSummary(){
 
   renderChart(ym);
 
-  $('s-exp').innerHTML = t.exps.length ? t.exps.map(x => `<button class="row" data-act="expMenu" data-id="${esc(x.id)}">
-      <span class="mid"><span class="nm" style="display:block">${esc(x.description || x.category)}</span>
-      <span class="sub" style="display:block">${esc(x.category)} · ${esc(dateLabel(x.date))}${x.wellId && wellOf(x.wellId) ? ' · ' + esc(wellOf(x.wellId).name) : ''}</span></span>
-      <span class="amt" style="color:var(--bad)">${fmt(x.amount)} ฿</span></button>`).join('')
-    : '<div class="empty" style="padding:1.2rem">ยังไม่มีค่าใช้จ่ายเดือนนี้</div>';
-
   const order = new Map(S.houses.map((h, i) => [h.id, i]));
   const bills = t.bills.slice().sort((a, b) => (order.get(a.houseId) ?? 1e9) - (order.get(b.houseId) ?? 1e9));
   $('s-bills').innerHTML = bills.length ? bills.map(b => {
@@ -1549,7 +1624,7 @@ function renderSummary(){
       <span class="st ${na ? 'n' : 'd'}">${na ? '0' : icon('check')}</span>
       <span class="mid"><span class="nm" style="display:block">${esc(b.houseName)}</span><span class="sub" style="display:block">${na ? 'ไม่มีการใช้น้ำ' : fmt(b.prevReading) + ' → ' + fmt(b.currentReading) + ' · ' + fmt(b.units) + ' หน่วย'}</span></span>
       ${na ? '' : `<span class="amt">${fmt(b.amount)} ฿</span>`}</button>`;
-  }).join('') : '<div class="empty" style="padding:1.2rem"><div class="e">📭</div>ยังไม่มีใบเสร็จเดือนนี้</div>';
+  }).join('') : `<div class="empty" style="padding:1.2rem"><div class="e">${icon('inbox')}</div>ยังไม่มีใบเสร็จเดือนนี้ — จดมิเตอร์ที่แท็บแรกได้เลย</div>`;
 }
 
 function renderChart(endYm){
@@ -1599,8 +1674,29 @@ function billMenu(id){
     <button class="menu-btn bad" data-act="delBill" data-id="${esc(b.id)}"><span class="mi">${icon('trash')}</span>ลบรายการนี้</button>`);
 }
 
-/* ── ค่าใช้จ่าย ── */
+/* ── ค่าใช้จ่าย (แท็บของตัวเอง) ── */
 const EXP_CATS = ['ค่าไฟฟ้า','ค่าซ่อม','ค่าวัสดุ','ค่าแรง','ค่าบำรุง','อื่นๆ'];
+function renderExpenses(){
+  const ym = UI.sumMonth, t = monthTotals(ym);
+  $('e-label').textContent = monthLabel(ym);
+  $('e-next').disabled = ym >= thisMonth();
+  // ยอดรวมแยกตามประเภท (เรียงจากมากไปน้อย) แล้วปิดท้ายด้วยรวมทั้งเดือน
+  const byCat = {};
+  t.exps.forEach(x => { const c = x.category || 'อื่นๆ'; byCat[c] = round2((byCat[c] || 0) + Number(x.amount || 0)); });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  $('e-cats').innerHTML = cats.map(([c, v]) => `<div class="ln"><span>${esc(c)}</span><b>${fmt(v)}</b></div>`).join('') +
+    `<div class="ln total"${cats.length ? '' : ' style="border-top:0"'}><span>รวมค่าใช้จ่าย (บาท)</span><b>${fmt(t.out)}</b></div>`;
+  $('e-count').textContent = t.exps.length ? t.exps.length + ' รายการ' : '';
+  const list = t.exps.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  $('e-list').innerHTML = list.length ? list.map(x => {
+    const w = x.wellId && wellOf(x.wellId);
+    return `<button class="row" data-act="expMenu" data-id="${esc(x.id)}">
+      <span class="mid"><span class="nm" style="display:block">${esc(x.description || x.category)}</span>
+      <span class="sub" style="display:block">${esc(dateLabel(x.date))} ${esc(x.category)}${w ? ' ' + esc(w.name) : ''}</span></span>
+      <span class="amt">${fmt(x.amount)} ฿</span></button>`;
+  }).join('')
+    : `<div class="empty" style="padding:1.4rem"><div class="e">${icon('inbox')}</div>ยังไม่มีค่าใช้จ่ายเดือนนี้<br><small>กด "เพิ่มค่าใช้จ่าย" ด้านบนเมื่อมีค่าไฟ ค่าซ่อม หรือค่าอื่นๆ</small></div>`;
+}
 function addExpense(){
   const ws = wells().filter(w => w.id !== '_none');
   const dflt = UI.sumMonth === thisMonth() ? todayISO() : UI.sumMonth + '-01';
@@ -1629,7 +1725,7 @@ function saveExpense(){
   enqueue(Object.assign({ action:'saveExpense' }, x));
   closeTop();
   UI.sumMonth = x.month;
-  renderSummary();
+  renderAll();
   toast(`✓ บันทึก ${x.description} ${fmt(amount)} บาท`);
 }
 function expMenu(id){
@@ -1743,12 +1839,15 @@ function renderAll(){
   renderSync();
   if (UI.view === 'home') renderHome();
   if (UI.view === 'sum') renderSummary();
+  if (UI.view === 'exp') renderExpenses();
   if (UI.view === 'set') renderSettings();
   if (UI.meter) renderMeter();
 }
 function go(view){
   UI.view = view;
-  ['home','sum','set'].forEach(v => { $('v-' + v).classList.toggle('on', v === view); $('n-' + v).classList.toggle('on', v === view); });
+  ['home','exp','sum','set'].forEach(v => { $('v-' + v).classList.toggle('on', v === view); $('n-' + v).classList.toggle('on', v === view); });
+  $('cycle-btn').classList.toggle('hidden', view !== 'home');
+  $('brand').classList.toggle('hidden', view === 'home');
   window.scrollTo(0, 0);
   if (view === 'set') fillSettingsForm();
   renderAll();
@@ -1800,7 +1899,7 @@ const ACT = {
   shareReceipt: () => shareReceipt(),
   printReceipt: () => printReceipt(),
   saveImg: async () => { const r = await currentDoneCanvas(); if (r) downloadCanvas(r.canvas, receiptFileName(r.b)); },
-  sumMonth: d => { const n = addMonths(UI.sumMonth, Number(d.d)); if (n <= thisMonth()) { UI.sumMonth = n; renderSummary(); } },
+  sumMonth: d => { const n = addMonths(UI.sumMonth, Number(d.d)); if (n <= thisMonth()) { UI.sumMonth = n; renderAll(); } },
   shareSummary: () => shareSummary(),
   billMenu: d => billMenu(d.id),
   viewBill: async d => { const b = S.bills.find(x => x.id === d.id); if (!b) return; await closeTop(); showDone(b, false); },
@@ -1827,7 +1926,7 @@ const ACT = {
     if (!await ask('ลบค่าใช้จ่ายนี้?', `${x.description || x.category} ${fmt(x.amount)} บาท`, 'ลบ', true)) return;
     S.expenses = S.expenses.filter(e => e.id !== x.id);
     enqueue({ action:'deleteExpense', id:x.id });
-    renderSummary(); toast('ลบแล้ว');
+    renderAll(); toast('ลบแล้ว');
   },
   textSize: d => { S.settings.textSize = d.v; save(); applyTextSize(); },
   saveInfo: () => saveInfo(),
